@@ -4,9 +4,9 @@ import Link from "next/link";
 import { initMiniApp } from "@telegram-apps/sdk";
 
 export default function HomePage() {
-  const [miniApp] = initMiniApp();
+  // const [miniApp] = initMiniApp();
 
-  miniApp.ready();
+  // miniApp.ready();
   return (
     <main className="bg-[#34581C]">
       <Link href="/login">

@@ -21,7 +21,7 @@ export default function RootLayout({
       className={`${montserrat.variable} ${montserrat.className}`}
     >
       <head>
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        {/* <script src="https://telegram.org/js/telegram-web-app.js"></script> */}
       </head>
       <body className="flex min-h-dvh flex-col">
         <div className="grid flex-1">
