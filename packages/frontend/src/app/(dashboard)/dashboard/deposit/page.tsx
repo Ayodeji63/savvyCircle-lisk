@@ -116,7 +116,7 @@ const DepositPage = () => {
   } = useReadContract({
     contract,
     method: "function getUserGroups(address) returns (int256[])",
-    params: [account?.address || "0x00000000"],
+    params: [account?.address ?? "0x00000000"],
   });
 
   // const groupInfo = useCallback()

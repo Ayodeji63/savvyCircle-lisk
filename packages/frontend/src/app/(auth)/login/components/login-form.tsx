@@ -47,7 +47,7 @@ const LoginForm = () => {
   const [showSignUp, setShowSignUp] = useState(false);
 
   // useEffect(() => {
-  //   if (account || wallet) {
+  //   if (account ?? wallet) {
   //     router.push('/dashboard')
   //   }
   // }, [account, wallet]);

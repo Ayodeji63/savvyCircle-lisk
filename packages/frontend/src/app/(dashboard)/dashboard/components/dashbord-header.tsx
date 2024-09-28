@@ -46,7 +46,7 @@ const DashboardHeader = () => {
   } = useReadContract({
     contract,
     method: "function getUserGroups(address) returns (int256[])",
-    params: [account?.address || "0x00000000"],
+    params: [account?.address ?? "0x00000000"],
   });
   useEffect(() => {
     if (account?.address) {
@@ -118,7 +118,7 @@ const DashboardHeader = () => {
             </p>
 
             <p className="text-lg font-semibold leading-6">
-              {formatViemBalance(userBalance || BigInt(200000000000)) ||
+              {formatViemBalance(userBalance ?? BigInt(200000000000)) ??
                 `200,000`}{" "}
             </p>
           </div>
