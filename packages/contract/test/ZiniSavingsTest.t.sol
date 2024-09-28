@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
-import {DeployZini} from "../script/DeployZini.s.sol";
+import {DeployZini} from "../script/ziniSavings/DeployZini.s.sol";
 import {ZiniSavings} from "../src/ziniSavings.sol";
-import {HelperConfig} from "../script/HelperConfig.s.sol";
+import {HelperConfig} from "../script/ziniSavings/HelperConfig.s.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 contract ZiniSavingsTest is Test {

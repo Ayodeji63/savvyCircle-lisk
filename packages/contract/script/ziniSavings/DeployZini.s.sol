@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {ZiniSavings} from "../src/ziniSavings.sol";
+import {ZiniSavings} from "../../src/ziniSavings.sol";
 
 import {HelperConfig} from "./HelperConfig.s.sol";
 

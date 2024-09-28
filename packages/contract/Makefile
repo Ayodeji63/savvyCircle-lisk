@@ -45,14 +45,19 @@ ifeq ($(findstring --network liskSepolia,$(ARGS)),--network liskSepolia)
 	NETWORK_ARGS := --rpc-url $(LISK_SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --etherscan-api-key 123 --verify --verifier blockscout  --verifier-url https://sepolia-blockscout.lisk.com/api  -vvvv
 endif
 
+ifeq ($(findstring --network scrollSepolia,$(ARGS)),--network scrollSepolia)
+	NETWORK_ARGS := --rpc-url $(SCROLL_SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --etherscan-api-key $(SCROLL_API_KEY) --verify   --verifier-url https://api-sepolia.scrollscan.com/api -vvvv 
+endif
+
 deploy:
-	@forge script script/DeployZini.s.sol:DeployZini $(NETWORK_ARGS)
+	@forge script script/ziniSavings/DeployZini.s.sol:DeployZini $(NETWORK_ARGS)
+
+
+stablecoin:
+	@forge script script/stablecoin/DeployDSC.s.sol:DeployDSC $(NETWORK_ARGS)
 
 mintToken:
 	@forge script script/Interactions.s.sol:MintToken $(NETWORK_ARGS)
 
 approve:
 	@forge script script/Interactions.s.sol:Engine $(NETWORK_ARGS)
-
-
-

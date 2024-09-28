@@ -15,7 +15,7 @@ contract HelperConfig is Script {
         0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6;
 
     constructor() {
-        if (block.chainid == 4202) {
+        if (block.chainid == 4202 || block.chainid == 534351) {
             activeNetworkConfig = getLiskEthConfig();
         } else {
             activeNetworkConfig = getOrCreateAnvilEthConfig();
@@ -41,7 +41,7 @@ contract HelperConfig is Script {
 
         return
             NetworkConfig({
-                token: 0x8de23bbE29028d6e646950db8D99eE92C821b5BB,
+                token: 0x75cc21cB369C86DEb89d31ef522FeD38223C08fe,
                 deployerKey: vm.envUint("PRIVATE_KEY")
             });
     }
