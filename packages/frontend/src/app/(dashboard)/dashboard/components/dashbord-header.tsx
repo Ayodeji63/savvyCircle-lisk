@@ -82,13 +82,12 @@ const DashboardHeader = () => {
     }
   }
 
-  const { data: userBalance, isLoading: tokenBalanceLoading } = account
-    ? useReadContract({
-        contract: tokenContract,
-        method: "function balanceOf(address) returns (uint256)",
-        params: [account.address],
-      })
-    : { data: undefined, isLoading: false };
+  const { data: userBalance, isLoading: tokenBalanceLoading } = useReadContract({
+    contract: tokenContract,
+    method: "function balanceOf(address) returns (uint256)",
+    params: account ? [account.address] : ["0x"],
+  })
+
 
   const { data, isLoading } = useReadContract({
     contract,
