@@ -10,14 +10,14 @@ import { tokenAddress } from "@/token";
 export const liskSepolia = defineChain(4202);
 
 export const contractInstance = getContract({
-  client: client,
-  chain: liskSepolia,
-  address: contractAddress,
+    client: client,
+    chain: liskSepolia,
+    address: contractAddress,
 });
 
-//@ts-ignore
+
 const tokenContract = getContract({
-  client: client,
-  chain: liskSepolia,
-  address: tokenAddress,
+    client: client,
+    chain: liskSepolia,
+    address: tokenAddress,
 });
