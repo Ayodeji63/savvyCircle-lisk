@@ -7,9 +7,7 @@ import { dirname } from 'path';
 import getUser from "./getUser.js";
 import { tokenAbi } from "../../token.js";
 import { Markup, Telegraf } from "telegraf";
-import { keyboard } from "telegraf/markup";
-import { message } from 'telegraf/filters'
-import { text } from "express";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
