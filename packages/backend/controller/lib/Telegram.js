@@ -102,10 +102,13 @@ async function handleCreateGroup(messageObj) {
     const userAddress = process.env.INITIAL_OWNER;
 
     try {
+
+        const user = await getUser(name);
+        const address = user.address;
         const nonce = await web3.eth.getTransactionCount(account.address);
         const gasEstimate = await contract.methods.createGroup(groupName, userAddress, chatId).estimateGas({ from: account.address });
 
-        const receipt = await contract.methods.createGroup(groupName, userAddress, chatId).send({
+        const receipt = await contract.methods.createGroup(groupName, address, chatId).send({
             from: account.address,
             gas: '7000000', // Increase gas estimate by 20%
             nonce: nonce
@@ -140,6 +143,8 @@ async function handleJoinGroup(messageObj) {
         // const nonce = await web3.eth.getTransactionCount(account.address);
         const user = await getUser(name);
         const address = user.address;
+        console.log(`Address is given as `, address);
+
         const nonce = await web3.eth.getTransactionCount(account.address);
 
 
