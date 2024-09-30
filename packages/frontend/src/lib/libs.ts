@@ -7,7 +7,7 @@ import { useReadContract } from "thirdweb/react";
 import { useState, useEffect } from "react";
 import { tokenAddress } from "@/token";
 
-export const liskSepolia = defineChain(4202);
+export const liskSepolia = defineChain(534351);
 
 export const contractInstance = getContract({
     client: client,

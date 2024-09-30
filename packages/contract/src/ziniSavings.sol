@@ -50,6 +50,7 @@ contract ZiniSavings is ReentrancyGuard {
         uint256 creationTime;
         bool firstHalfLoanDistributed;
         bool secondHalfLoanDistributed;
+        bool loanRepaid;
         uint256 firstBatchRepaidCount;
         string name;
         address admin;
@@ -64,6 +65,7 @@ contract ZiniSavings is ReentrancyGuard {
         uint256 amountRepaid;
         uint256 monthlyPayment;
         uint256 nextPaymentDue;
+        uint256 debt;
         bool fullyRepaid;
         bool isFirstBatch;
     }
@@ -125,7 +127,6 @@ contract ZiniSavings is ReentrancyGuard {
         newGroup.creationTime = block.timestamp;
         newGroup.name = _name;
         newGroup.admin = msg.sender;
-        newGroup.memberCount = 1;
         _joinGroup(_groupId, user);
 
         emit GroupCreated(_groupId, _name, msg.sender);
@@ -133,11 +134,6 @@ contract ZiniSavings is ReentrancyGuard {
 
     function setMonthlyContribution(int256 _groupId, uint256 _amount) external {
         Group storage group = groups[_groupId];
-
-        require(
-            group.monthlyContribution == 0,
-            "Group Contribution already set"
-        );
         group.monthlyContribution = _amount;
     }
 
@@ -166,21 +162,20 @@ contract ZiniSavings is ReentrancyGuard {
 
     function distributeLoans(int256 _groupId) external {
         Group storage group = groups[_groupId];
-        require(group.members.length % 2 == 0, "Group size must be even");
-        require(
-            group.members.length >= 2,
-            "Group must have at least 2 members"
-        );
-        require(
-            group.totalSavings >=
-                group.monthlyContribution * group.members.length,
-            "Insufficient group savings"
-        );
+        // require(group.memberCount % 2 == 0, "Group size must be even");
+        // require(group.memberCount >= 2, "Group must have at least 2 members");
+        // require(
+        //     group.totalSavings >= group.monthlyContribution * group.memberCount,
+        //     "Insufficient group savings"
+        // );
 
-        uint256 halfGroupSize = group.members.length / 2;
+        uint256 halfGroupSize = group.memberCount / 2;
+        ////
+        // 2 / 2 = 1
+
         uint256 totalLoanAmount = group.totalSavings;
-        uint256 individualLoanAmount = (totalLoanAmount /
-            group.members.length) * LOAN_PRECISION;
+        uint256 individualLoanAmount = (totalLoanAmount / group.memberCount) *
+            LOAN_PRECISION;
 
         // if groupsize = 4
         // monthlyDistribution = 10k
@@ -196,12 +191,12 @@ contract ZiniSavings is ReentrancyGuard {
                 individualLoanAmount,
                 true
             );
-            group.loanGivenOut = group.totalSavings * 3;
+            group.loanGivenOut += group.monthlyContribution * 3;
         } else if (!group.secondHalfLoanDistributed) {
-            require(
-                group.firstBatchRepaidCount == halfGroupSize,
-                "First batch loans not fully repaid"
-            );
+            // require(
+            //     group.firstBatchRepaidCount == halfGroupSize,
+            //     "First batch loans not fully repaid"
+            // );
             _distributeLoansTERNAL(
                 _groupId,
                 halfGroupSize,
@@ -210,9 +205,7 @@ contract ZiniSavings is ReentrancyGuard {
                 false
             );
             group.secondHalfLoanDistributed = true;
-            group.loanGivenOut = group.totalSavings * 3;
-        } else {
-            revert("All loans have been distributed");
+            group.loanGivenOut += group.monthlyContribution * 3;
         }
     }
 
@@ -221,32 +214,22 @@ contract ZiniSavings is ReentrancyGuard {
         Loan storage loan = loans[msg.sender][_groupId];
         require(loan.totalAmount > 0, "No active loan");
         require(!loan.fullyRepaid, "Loan already repaid");
-        uint256 amountDue = loan.monthlyPayment;
-        require(
-            token.balanceOf(msg.sender) >= amountDue,
-            "Insufficient balance for repayment"
-        );
-        if (_amount >= amountDue) {
-            token.safeTransferFrom(msg.sender, address(this), _amount);
-            loan.amountRepaid += _amount;
-            group.repaidLoan += _amount;
+        // uint256 amountDue = loan.monthlyPayment;
 
-            emit LoanRepayment(_groupId, msg.sender, _amount);
-        } else {
-            token.safeTransferFrom(msg.sender, address(this), _amount);
-            loan.amountRepaid += amountDue;
-            group.repaidLoan += _amount;
-            emit LoanRepayment(_groupId, msg.sender, amountDue);
-        }
+        token.safeTransferFrom(msg.sender, address(this), _amount);
+        loan.amountRepaid += _amount;
+        loan.debt = loan.debt - _amount;
+        group.repaidLoan += _amount;
+
+        emit LoanRepayment(_groupId, msg.sender, _amount);
 
         if (loan.amountRepaid >= loan.totalAmount) {
             loan.fullyRepaid = true;
+            group.loanRepaid = true;
 
             if (loan.isFirstBatch) {
                 group.firstBatchRepaidCount++;
             }
-        } else {
-            loan.nextPaymentDue += 30 days;
         }
     }
 
@@ -264,12 +247,12 @@ contract ZiniSavings is ReentrancyGuard {
             !groups[_groupId].addressToMember[user].isMember,
             "Already in group"
         );
-        group.members.push(msg.sender);
+        group.members.push(user);
         // group.isMember[msg.sender] = true;
         group.addressToMember[user].isMember = true;
         groups[_groupId].memberCount++;
         userGroups[user].push(_groupId);
-        emit MemberJoined(_groupId, msg.sender);
+        emit MemberJoined(_groupId, user);
     }
 
     function _distributeLoansTERNAL(
@@ -287,10 +270,6 @@ contract ZiniSavings is ReentrancyGuard {
 
         for (uint i = startIndex; i < endIndex; i++) {
             address borrower = group.members[i];
-            require(
-                !group.hasReceivedLoan[borrower],
-                "Member already received a loan"
-            );
 
             token.safeTransfer(borrower, loanAmount);
             loans[borrower][_groupId] = Loan({
@@ -299,9 +278,11 @@ contract ZiniSavings is ReentrancyGuard {
                 monthlyPayment: monthlyPayment,
                 nextPaymentDue: block.timestamp + 30 days,
                 fullyRepaid: false,
-                isFirstBatch: isFirstBatch
+                isFirstBatch: isFirstBatch,
+                debt: totalLoanWithInterest
             });
             group.hasReceivedLoan[borrower] = true;
+            group.loanRepaid = false;
             emit LoanDistributed(_groupId, borrower, loanAmount, isFirstBatch);
         }
 
@@ -330,12 +311,18 @@ contract ZiniSavings is ReentrancyGuard {
         return groups[_groupId].totalSavings;
     }
 
-    function getOutStandingLoan(int256 _groupId) public view returns (uint256) {
-        return loans[msg.sender][_groupId].totalAmount;
+    function getOutStandingLoan(
+        int256 _groupId,
+        address user
+    ) public view returns (uint256) {
+        return loans[user][_groupId].totalAmount;
     }
 
-    function getAmountRepaid(int256 _groupId) public view returns (uint256) {
-        return loans[msg.sender][_groupId].amountRepaid;
+    function getAmountRepaid(
+        int256 _groupId,
+        address user
+    ) public view returns (uint256) {
+        return loans[user][_groupId].amountRepaid;
     }
 
     function getGroupTotalLoanGiveOut(
@@ -358,5 +345,26 @@ contract ZiniSavings is ReentrancyGuard {
         address user
     ) external view returns (int256[] memory) {
         return userGroups[user];
+    }
+
+    function getGroupMemebers(
+        int256 _groupId,
+        uint index
+    ) public view returns (address) {
+        return groups[_groupId].members[index];
+    }
+
+    function getUserDebt(
+        int256 _groupId,
+        address user
+    ) external view returns (uint256) {
+        return loans[user][_groupId].debt;
+    }
+
+    function getMemeberSavings(
+        int256 _groupId,
+        address user
+    ) public view returns (uint256) {
+        return groups[_groupId].memberSavings[user];
     }
 }

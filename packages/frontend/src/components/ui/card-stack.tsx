@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Icons } from "../common/icons";
 import { cn } from "@/lib/utils";
+import { useAuthContext } from "@/context/AuthContext";
 
 let interval: unknown;
 
@@ -14,17 +15,17 @@ type Card = {
 };
 
 export const CardStack = ({
-  items,
+  // items,
   offset,
   scaleFactor,
 }: {
-  items: Card[];
   offset?: number;
   scaleFactor?: number;
 }) => {
   const CARD_OFFSET = offset ?? 10;
   const SCALE_FACTOR = scaleFactor ?? 0.06;
-  const [cards, setCards] = useState<Card[]>(items);
+  // const [cards, setCards] = useState<Card[]>(items);
+  const { CARDS, setCARDS } = useAuthContext();
 
   useEffect(() => {
     startFlipping();
@@ -33,7 +34,7 @@ export const CardStack = ({
   }, []);
   const startFlipping = () => {
     interval = setInterval(() => {
-      setCards((prevCards: Card[]) => {
+      setCARDS((prevCards: Card[]) => {
         const newArray = [...prevCards]; // create a copy of the array
         newArray.unshift(newArray.pop()!); // move the last element to the front
         return newArray;
@@ -43,7 +44,7 @@ export const CardStack = ({
 
   return (
     <div className="relative h-60 w-full md:h-60 md:w-96">
-      {cards.map((card, index) => {
+      {CARDS.map((card, index) => {
         return (
           <motion.div
             key={card.id}
@@ -57,7 +58,7 @@ export const CardStack = ({
             animate={{
               top: index * -CARD_OFFSET,
               scale: 1 - index * SCALE_FACTOR, // decrease scale for cards that are behind
-              zIndex: cards.length - index, //  decrease z-index for the cards that are behind
+              zIndex: CARDS.length - index, //  decrease z-index for the cards that are behind
             }}
           >
             <Icons.simCard />

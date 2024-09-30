@@ -19,7 +19,7 @@ import { routes } from "@/lib/routes";
 // import EmptyState from "@/components/common/empty-state";
 
 const DashboardPage = () => {
-  const liskSepolia = defineChain(4202);
+  const liskSepolia = defineChain(534351);
   // const { userGroupId } = useAuthContext()
   const account = useActiveAccount();
   const [userGroup, setUserGroup] = useState<any>([]);
@@ -52,19 +52,11 @@ const DashboardPage = () => {
           <h1 className="py-4 text-base font-medium leading-[18px] text-[#0A0F29]">
             Saving groups
           </h1>
-          {_userGroupId ? (
-            <div
-            // 456
-            // className="grid grid-cols-2 gap-x-4"
-            >
-              {/* <EmptyState text="Group details go here" /> */}
-              {_userGroupId && (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                  {_userGroupId?.map((id) => (
-                    <Group key={id.toString()} id={id} />
-                  ))}
-                </div>
-              )}
+          {Array.isArray(_userGroupId) && _userGroupId.length > 0 ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              {_userGroupId.map((id) => (
+                <Group key={id.toString()} id={id} />
+              ))}
             </div>
           ) : (
             <div>

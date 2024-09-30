@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 
 const DashboardHeader = () => {
-  const liskSepolia = defineChain(4202);
+  const liskSepolia = defineChain(534351);
 
   const account = useActiveAccount();
   const { userGroupId, setUserGroupId } = useAuthContext();

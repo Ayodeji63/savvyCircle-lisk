@@ -5,6 +5,7 @@ import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { ThirdwebProvider } from "thirdweb/react";
 
+
 export const metadata: Metadata = {
   title: "Savvy Circle",
   description:
@@ -26,7 +27,12 @@ export default function RootLayout({
       <body className="flex min-h-dvh flex-col">
         <div className="grid flex-1">
           <ThirdwebProvider>
+            {/* <Providers>
+            <AppKitProvider> */}
             <AuthContextProvider>{children}</AuthContextProvider>
+
+            {/* </AppKitProvider>
+          </Providers> */}
           </ThirdwebProvider>
         </div>
       </body>

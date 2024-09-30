@@ -26,10 +26,11 @@ import { abi, contractAddress } from "@/contract";
 import { AuthContext, useAuthContext } from "@/context/AuthContext";
 import { createUser } from "@/actions/actions";
 import { PrismaClient } from "@prisma/client";
+import { scrollSepoliaTestnet } from "thirdweb/chains";
 
 // const prisma = new PrismaClient();
 
-const liskSepolia = defineChain(4202);
+// const liskSepolia = defineChain(4202);
 
 const loginFormSchema = object({
   name: string().required("Telegram username is required"),
@@ -47,14 +48,14 @@ const LoginForm = () => {
   const [showSignUp, setShowSignUp] = useState(false);
 
   // useEffect(() => {
-  //   if (account ?? wallet) {
+  //   if (account || wallet) {
   //     router.push('/dashboard')
   //   }
   // }, [account, wallet]);
 
   const contract = getContract({
     client: client,
-    chain: liskSepolia,
+    chain: scrollSepoliaTestnet,
     address: contractAddress,
     // abi: abi, // Uncomment and provide ABI if needed
   });
@@ -162,7 +163,7 @@ const LoginForm = () => {
       {account && (
         <Button
           className="bg-white text-black"
-          // onClick={onOpen} disabled={isOpen}
+        // onClick={onOpen} disabled={isOpen}
         >
           {isOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Sign up
@@ -170,15 +171,13 @@ const LoginForm = () => {
       )}
       <ConnectButton
         client={client}
-        accountAbstraction={{
-          chain: liskSepolia,
-          sponsorGas: true,
-        }}
+
         wallets={[
           inAppWallet({
             auth: {
               options: ["phone", "email"],
             },
+
           }),
         ]}
       />

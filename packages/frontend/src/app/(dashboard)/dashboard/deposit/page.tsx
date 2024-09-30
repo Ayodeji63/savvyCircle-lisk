@@ -25,7 +25,7 @@ import {
   useSendBatchTransaction,
   useSendTransaction,
 } from "thirdweb/react";
-import { ContractOptions, getContract, prepareContractCall } from "thirdweb";
+import { Address, ContractOptions, getContract, prepareContractCall, sendBatchTransaction, sendTransaction } from "thirdweb";
 import { client } from "@/app/client";
 import { abi, contractAddress } from "@/contract";
 import { defineChain } from "thirdweb/chains";
@@ -33,6 +33,10 @@ import { bigint } from "zod";
 import { contractInstance } from "@/lib/libs";
 import Group from "../components/group";
 import { tokenAddress } from "@/token";
+import GroupRadio from "./components/radiogroup";
+import { useAuthContext } from "@/context/AuthContext";
+import { Hash, parseEther } from "viem";
+import { prepareTransactionRequest } from "node_modules/viem/_types/actions/wallet/prepareTransactionRequest";
 
 const depositSchema = object({
   group: string().required("group is required"),
@@ -49,6 +53,8 @@ const DepositPage = () => {
   const { setPage } = useUiStore();
   const { onOpen, onClose, isOpen } = useDisclosure();
   const [amount, setAmount] = useState<string>("");
+  const { depositAmount, setDepositAmount, groupId } = useAuthContext();
+  const [text, setText] = useState<string>("Continue")
 
   const {
     mutate: sendBatch,
@@ -58,17 +64,17 @@ const DepositPage = () => {
     isSuccess: success,
   } = useSendBatchTransaction();
 
-  const {
-    mutate: sendTransaction,
-    data: result,
-    isPending: pendings,
-    isError: errors,
-    isSuccess: successs,
-  } = useSendTransaction();
+  // const {
+  //   mutate: sendTransaction,
+  //   data: result,
+  //   isPending: pendings,
+  //   isError: errors,
+  //   isSuccess: successs,
+  // } = useSendTransaction();
 
   const account = useActiveAccount();
 
-  const liskSepolia = defineChain(4202);
+  const liskSepolia = defineChain(534351);
 
   const contract = getContract({
     client: client,
@@ -83,25 +89,75 @@ const DepositPage = () => {
     address: tokenAddress,
   }) as Readonly<ContractOptions<[]>>;
 
-  const onClick = async (amount: bigint) => {
+  const approve = async () => {
     try {
-      console.log("Transferring to client");
 
-      const tx1 = prepareContractCall({
+      const transaction = prepareContractCall({
         contract: tokenContract,
         method: "function approve(address, uint256) returns(bool)",
-        params: [contractAddress, amount],
+        params: [contractAddress, parseEther(String(depositAmount))],
       });
 
-      // const tx2 = prepareContractCall({
-      //   contract: contractInstance,
-      //   method: "function deposit(int256)",
-      //   params: [1n]
-      // })
+      if (!account) return;
+      setText("Approving....");
 
-      // sendBatch([tx1, tx2]);
-      sendTransaction(tx1);
-      console.log(transactionResult);
+      const result = await sendTransaction({
+        account,
+        transaction,
+      });
+      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      console.log(waitForReceiptOptions);
+      setText("Approval Successful!");
+
+    } catch (error) {
+      setText("Approval Failed Try Again");
+
+    }
+  }
+
+  const deposit = async () => {
+    try {
+      console.log(`GroupId is given as `, groupId);
+
+      if (!groupId) return;
+      const transaction = prepareContractCall({
+        contract: contractInstance,
+        method: "function deposit(int256)",
+        params: [groupId]
+      })
+
+
+      if (!account) return;
+      setText("Depositing....");
+
+      const result = await sendTransaction({
+        account,
+        transaction,
+        // gasless: {
+        //   provider: "openzeppelin",
+        //   relayerUrl: "https://api.defender.openzeppelin.com/actions/e2aea3df-c8aa-43f7-a43f-a60f42595bb8/runs/webhook/e9f89618-be19-4547-ba52-67b58c2d85be/MnKRcuCDgGFKTqq8YUqup6",
+        //   relayerForwarderAddress: "0x081Cc7090aBd4C071100Ff2B3d2C1E3cc0234aF1"
+        // }
+      });
+      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      console.log(waitForReceiptOptions);
+      setText("Deposit Successful!");
+
+      return waitForReceiptOptions.transactionHash;
+    } catch (err) {
+      console.log(err);
+      setText("Deposit Failed Try Again");
+
+
+    }
+  }
+  const onClick = async () => {
+    try {
+      console.log("Transferring to client");
+      await approve();
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      await deposit();
+
 
       // sendTransaction(tx2);
     } catch (error) {
@@ -127,7 +183,7 @@ const DepositPage = () => {
     handleSubmit,
     control,
     setValue,
-    formState: {},
+    formState: { },
   } = useForm<FormData>({
     resolver: yupResolver(depositSchema),
   });
@@ -135,8 +191,10 @@ const DepositPage = () => {
   const onSubmit = () => {
     // console.log(data);
     // onOpen();
-    onClick(BigInt(amount));
+    onClick();
   };
+
+
 
   const handleAmountInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -154,6 +212,8 @@ const DepositPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+
   return (
     <>
       <DepositModal {...{ isOpen, onClose }} />
@@ -168,7 +228,7 @@ const DepositPage = () => {
               Select a group to make a deposit
             </h1>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* <div>
+              <div>
                 <Controller
                   name="group"
                   control={control}
@@ -178,66 +238,15 @@ const DepositPage = () => {
                       defaultValue={value}
                       className="grid grid-cols-2 gap-x-4 gap-y-2"
                     >
-                      {groups.map((group, index) => (
-                        <div key={`groups-${index}`}>
-                          <RadioGroupItem
-                            value={group.value}
-                            id={group.value}
-                            className="hidden"
-                            onClick={() => setAmount(Number(group.amount))}
-                          />
-                          <Label htmlFor={group.value}>
-                            <div
-                              className={cn(
-                                "space-y-8 rounded-[8px] border border-[#D7D9E4] bg-white p-4 shadow-[0px_4px_8px_0px_#0000000D]",
-                                {
-                                  "bg-[#BDEBA1]": value === group.value,
-                                },
-                              )}
-                            >
-                              <Icons.bitcoinBag className="h-10 w-10" />
-                              <div className="space-y-1 font-normal">
-                                <p className="text-xs leading-[14px] text-[#098C28]">
-                                  #{group.amount}
-                                </p>
-                                <p className="text-base leading-[18px] text-[#0A0F29]">
-                                  {group.name}
-                                </p>
-                              </div>
-                            </div>
-                          </Label>
-                        </div>
+                      {_userGroupId?.map((id) => (
+                        <GroupRadio id={id} key={id.toString()} />
                       ))}
                     </RadioGroup>
                   )}
                 />
-                <FormErrorTextMessage errors={errors.group} />
-              </div> */}
+              </div>
 
-              <section className="space-y-2">
-                <h1 className="py-4 text-base font-medium leading-[18px] text-[#0A0F29]">
-                  Saving groups
-                </h1>
-                {_userGroupId ? (
-                  <div
-                  // 456
-                  // className="grid grid-cols-2 gap-x-4"
-                  >
-                    {/* <EmptyState text="Group details go here" /> */}
-                    {_userGroupId && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                        {_userGroupId?.map((id) => (
-                          <Group key={id.toString()} id={id} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <p>Join a group in the telegram</p>
-                  </div>
-                )}
-              </section>
+
 
               {/* </div> */}
               <div className="space-y-3 rounded-lg border border-[#D7D9E4] bg-[#F8FDF5] px-4 py-7 shadow-[0px_4px_8px_0px_#0000000D]">
@@ -249,7 +258,7 @@ const DepositPage = () => {
                     <Input
                       placeholder="Enter deposit amount"
                       className="tect-base font-medium text-[#696F8C] placeholder:text-[#696F8C]"
-                      value={amount}
+                      value={depositAmount}
                       onChange={handleAmountInput}
                     />
                     {/* <FormErrorTextMessage errors={errors.amount} /> */}
@@ -268,12 +277,12 @@ const DepositPage = () => {
                   </div>
                 </div>
                 <Button className="bg-[#4A9F17]" onClick={onSubmit}>
-                  {pendings
+                  {pending
                     ? "Pending..."
-                    : successs
+                    : success
                       ? "Sucessful"
-                      : errors
-                        ? "Successful"
+                      : error
+                        ? "Error"
                         : "Continue"}
                 </Button>
               </div>

@@ -10,7 +10,7 @@ import { contractAddress } from "../../../../contract";
 import { formatEther } from "viem";
 import { group } from "console";
 
-const liskSepolia = defineChain(4202);
+const liskSepolia = defineChain(534351);
 
 interface GroupProps {
   id: bigint;
@@ -33,7 +33,7 @@ const Group: React.FC<GroupProps> = ({ id }) => {
   } = useReadContract({
     contract,
     method:
-      "function groups(int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool,uint256,string,address,uint256)",
+      "function groups(int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool,bool,uint256,string,address,uint256)",
     params: [id],
   });
 

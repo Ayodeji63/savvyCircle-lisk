@@ -21,20 +21,30 @@ import { amounts } from "@/lib/utils";
 import { useUiStore } from "@/store/useUiStore";
 import { yupResolver } from "@hookform/resolvers/yup";
 import numeral from "numeral";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { type InferType, number, object } from "yup";
 import GroupInfoCard from "./group-info-card";
-import { useReadContract } from "thirdweb/react";
-import { getContract } from "thirdweb";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { getContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { client } from "@/app/client";
-import { liskSepolia } from "@/lib/libs";
+import { contractInstance, liskSepolia } from "@/lib/libs";
 import { contractAddress } from "@/contract";
 import { group } from "console";
+import { formatEther, parseEther } from "viem";
+import { Card, useAuthContext } from "@/context/AuthContext";
+import { tokenAddress } from "@/token";
 
 type Props = {
   id: string;
 };
+
+
+const tokenContract = getContract({
+  client: client,
+  chain: liskSepolia,
+  address: tokenAddress,
+});
 
 const loanSchema = object({
   amount: number()
@@ -57,6 +67,11 @@ const GroupPageClientSide = ({ id }: any) => {
     address: contractAddress,
   });
 
+  const { CARDS, setCARDS } = useAuthContext();
+  const account = useActiveAccount();
+  const [loanRepayment, setLoanRepayment] = useState<number>(0);
+  const [loanText, setLoanText] = useState("Repay Loan");
+  const [request, setRequest] = useState("Request Loan");
   const {
     data: groupData,
     isLoading: idLoading,
@@ -64,11 +79,22 @@ const GroupPageClientSide = ({ id }: any) => {
   } = useReadContract({
     contract,
     method:
-      "function groups(int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool,uint256,string,address,uint256)",
+      "function groups(int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool,bool,uint256,string,address,uint256)",
     params: [BigInt(id)],
   });
 
-  console.log(groupData);
+  const {
+    data: loanData,
+    isLoading: loanLoading,
+    refetch: refetchLoanData,
+  } = useReadContract({
+    contract,
+    method:
+      "function loans(address, int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool)",
+    params: [account ? account?.address : "0x", BigInt(id)],
+  });
+
+  console.log(loanData);
 
   const {
     register,
@@ -79,20 +105,136 @@ const GroupPageClientSide = ({ id }: any) => {
     resolver: yupResolver(loanSchema),
   });
 
+  function formatViemBalance(balance: bigint): string {
+    // Convert the balance to a number
+    const balanceInEther = parseFloat(formatEther(balance));
+
+    // Format the number with commas
+    const formattedBalance = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(balanceInEther);
+
+    // Add magnitude representation for millions and thousands
+    if (balanceInEther >= 1000000) {
+      return `${formattedBalance}`;
+    } else if (balanceInEther >= 1000) {
+      return `${formattedBalance}`;
+    } else {
+      return formattedBalance;
+    }
+  }
+
+
   const handleAmountInput = (value: number) => {
     setValue("amount", value);
   };
 
-  const onSubmit = (data: FormData) => {
-    console.log(data);
-  };
+
+
+
+  useEffect(() => {
+    console.log('useEffect triggered. groupData:', groupData);
+    if (groupData) {
+      setCARDS((prevCards: Card[]): Card[] => {
+        return prevCards.map(card => {
+          switch (card.id) {
+            case 0:
+              return { ...card, value: `#${String(formatViemBalance(groupData[1]))}` };
+            case 1:
+              return { ...card, value: String(groupData[11]) };
+            case 2:
+              return { ...card, value: `#${String(formatViemBalance(groupData[2]))}` };
+            default:
+              return card;
+          }
+        });
+      });
+    } else {
+      console.log('groupData is null or undefined');
+    }
+  }, [groupData]);
+
+  useEffect(() => {
+    console.log('CARDS state updated:', CARDS);
+  }, [CARDS]);
 
   useEffect(() => {
     setPage({ previousRouter: routes.dashboard });
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     useUiStore.persist.rehydrate();
+    refetchGroupData();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const approve = async (amount: number) => {
+    try {
+      setLoanText("Approving...")
+      const transaction = prepareContractCall({
+        contract: tokenContract,
+        method: "function approve(address, uint256) returns(bool)",
+        params: [contractAddress, parseEther(String(amount))],
+      });
+
+      if (!account) return;
+      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      console.log(waitForReceiptOptions);
+
+    } catch (error) {
+      console.log(error);
+      setLoanText("Approved Failed!");
+
+    }
+  }
+
+  const repayLoan = async (amount: number) => {
+    try {
+
+      if (!id) return;
+      setLoanText("Repaying....");
+      const transaction = prepareContractCall({
+        contract: contractInstance,
+        method: "function repayLoan(int256, uint256)",
+        params: [id, parseEther(String(amount))]
+      })
+      if (!account) return;
+      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      console.log(waitForReceiptOptions);
+      setLoanText("Loan Repaid! 🎉");
+      return waitForReceiptOptions.transactionHash;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  const distributeLoans = async () => {
+    try {
+
+      if (!id) return;
+      setRequest("Requesting....");
+      const transaction = prepareContractCall({
+        contract: contractInstance,
+        method: "function distributeLoans(int256)",
+        params: [id]
+      })
+      if (!account) return;
+      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      console.log(waitForReceiptOptions);
+      setRequest("Loan Gotten! 🎉");
+      return waitForReceiptOptions.transactionHash;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  const onSubmit = async (data: FormData) => {
+    console.log(data);
+    await approve(data.amount);
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    await repayLoan(data.amount);
+
+  };
 
   return (
     <main className="pt-4">
@@ -100,11 +242,11 @@ const GroupPageClientSide = ({ id }: any) => {
         <PageWrapper>
           <div className="flex items-center">
             <BackButton />
-            <PageTitle text={groupData[8]} />
+            <PageTitle text={groupData[9]} />
           </div>
           <div className="mt-14 space-y-4">
             <div className="h-[246px]">
-              <CardStack items={CARDS} />
+              <CardStack />
             </div>
             {/* Activities */}
             <div className="space-y-2">
@@ -115,10 +257,10 @@ const GroupPageClientSide = ({ id }: any) => {
                 <div className="grid grid-cols-2 divide-x-[1px] divide-[#0A0F2933]">
                   <div className="space-y-1 pr-[34px] text-center">
                     <p className="text-xs font-normal text-[#696F8C]">
-                      Total loan borrowed by you
+                      Recent loan borrowed by you + Interest 5%
                     </p>
                     <p className="text-sm font-medium leading-4 text-[#696F8C]">
-                      #20,000
+                      {loanData ? `#${formatViemBalance(loanData[0])}` : "----"}
                     </p>
                   </div>
                   <div className="space-y-1 pl-[31px] text-center">
@@ -126,11 +268,14 @@ const GroupPageClientSide = ({ id }: any) => {
                       Total loan left to be repaid by you
                     </p>
                     <p className="text-sm font-medium leading-4 text-[#696F8C]">
-                      #10,000
+                      {loanData ? `#${formatViemBalance(loanData[4])}` : "----"}
                     </p>
                   </div>
                 </div>
+                {groupData[7] && <Button className="bg-[#4A9F17]" onClick={distributeLoans}>{request}</Button>}
+
                 <Sheet>
+
                   <SheetTrigger asChild>
                     <Button className="bg-[#4A9F17]">Repay Loan</Button>
                   </SheetTrigger>
@@ -165,7 +310,7 @@ const GroupPageClientSide = ({ id }: any) => {
                               </Button>
                             ))}
                           </div>
-                          <Button className="bg-[#4A9F17]">Continue</Button>
+                          <Button className="bg-[#4A9F17]">{loanText}</Button>
                         </form>
 
                         {/* This action cannot be undone. This will permanently delete
@@ -185,17 +330,17 @@ const GroupPageClientSide = ({ id }: any) => {
               <div className="grid grid-cols-3 gap-x-5">
                 <GroupInfoCard
                   text="Total no of members"
-                  value={String(groupData[10])}
+                  value={String(groupData[11])}
                   icon="profile"
                 />
                 <GroupInfoCard
                   text="Total loan given out"
-                  value="#400,000"
+                  value={groupData[2] ? `#${String(formatViemBalance(groupData[2]))}` : "0"}
                   icon="requestLoan"
                 />
                 <GroupInfoCard
                   text="Total repaid"
-                  value="#320,000"
+                  value={groupData[2] ? `#${String(formatViemBalance(groupData[3]))}` : "0"}
                   icon="repayLoan"
                 />
               </div>
@@ -260,23 +405,3 @@ const GroupPageClientSide = ({ id }: any) => {
 
 export default GroupPageClientSide;
 
-const CARDS = [
-  {
-    id: 0,
-    text: "Total Group Savings",
-    value: "#200,000",
-    className: "bg-gradient-to-bl from-[#00A6C2] to-[#70E77E]",
-  },
-  {
-    id: 1,
-    className: "bg-gradient-to-bl from-[#1544DF] to-[#00A6C2]",
-    text: "Total Group members",
-    value: "10",
-  },
-  {
-    id: 2,
-    className: "bg-gradient-to-bl from-[#6C40D9] to-[#A858EE]",
-    text: "Total loan given out",
-    value: "#250,000",
-  },
-];
