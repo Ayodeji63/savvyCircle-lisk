@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "lerna run dev --scope \"@zini/frontend\"",
-    "build": "lerna run build --scope \"@zini/frontend\"",
+    "build": "pnpm -r run build",
     "start": "lerna run start --scope \"@zini/frontend\"",
     "prettier": "lerna run prettier --scope \"@zini/frontend\"",
     "lint": "lerna run lint --scope \"@zini/frontend\"",
