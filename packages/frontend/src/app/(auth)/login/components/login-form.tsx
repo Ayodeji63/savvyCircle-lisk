@@ -27,6 +27,8 @@ import { AuthContext, useAuthContext } from "@/context/AuthContext";
 import { createUser } from "@/actions/actions";
 import { PrismaClient } from "@prisma/client";
 import { scrollSepoliaTestnet } from "thirdweb/chains";
+import { liskSepolia } from "@/lib/libs";
+import prisma from "@/lib/db";
 
 // const prisma = new PrismaClient();
 
@@ -171,7 +173,10 @@ const LoginForm = () => {
       )}
       <ConnectButton
         client={client}
-
+        accountAbstraction={{
+          chain: liskSepolia,
+          sponsorGas: true
+        }}
         wallets={[
           inAppWallet({
             auth: {

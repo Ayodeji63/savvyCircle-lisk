@@ -54,7 +54,7 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "telegraf": "^4.16.3",
-    "thirdweb": "^5.59.0",
+    "thirdweb": "^5.59.2",
     "uuid": "^10.0.0",
     "viem": "^2.8.4",
     "wagmi": "^2.12.5",
