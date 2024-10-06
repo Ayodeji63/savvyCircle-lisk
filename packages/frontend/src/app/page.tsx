@@ -8,7 +8,7 @@ export default function HomePage() {
 
   // miniApp.ready();
   return (
-    <main className="bg-[#34581C]">
+    <main className="bg-[#34581C] bg-[url('/img/bg.jpeg')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
       <Link href="/login">
         <div className="error grid h-full place-items-center">
           <div className="flex flex-col items-center">

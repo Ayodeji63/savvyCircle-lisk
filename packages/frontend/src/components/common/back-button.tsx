@@ -20,7 +20,7 @@ const BackButton = () => {
     router.back();
   };
 
-  return <ChevronLeft className="text-[#696F8C]" onClick={handleNavigation} />;
+  return <ChevronLeft className="text-[white]" onClick={handleNavigation} />;
 };
 
 export default BackButton;

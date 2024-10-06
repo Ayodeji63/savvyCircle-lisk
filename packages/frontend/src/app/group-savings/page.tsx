@@ -15,7 +15,7 @@ import { amounts, cn, groups } from "@/lib/utils";
 import { useUiStore } from "@/store/useUiStore";
 import { yupResolver } from "@hookform/resolvers/yup";
 import numeral from "numeral";
-import { useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { type InferType, number, object, string } from "yup";
 import DepositModal from "./deposit-modal";
@@ -25,18 +25,26 @@ import {
   useSendBatchTransaction,
   useSendTransaction,
 } from "thirdweb/react";
-import { Address, ContractOptions, getContract, prepareContractCall, sendBatchTransaction, sendTransaction } from "thirdweb";
+import {
+  Address,
+  ContractOptions,
+  getContract,
+  prepareContractCall,
+  sendBatchTransaction,
+  sendTransaction,
+} from "thirdweb";
 import { client } from "@/app/client";
 import { abi, contractAddress } from "@/contract";
 import { defineChain } from "thirdweb/chains";
 import { bigint } from "zod";
-import { contractInstance } from "@/lib/libs";
-import Group from "../components/group";
+import { contractInstance, tokenContract } from "@/lib/libs";
+// import Group from "../components/group";
 import { tokenAddress } from "@/token";
 import GroupRadio from "./components/radiogroup";
 import { useAuthContext } from "@/context/AuthContext";
 import { Hash, parseEther } from "viem";
 import { prepareTransactionRequest } from "node_modules/viem/_types/actions/wallet/prepareTransactionRequest";
+import { ArrowLeft, Info } from "lucide-react";
 
 const depositSchema = object({
   group: string().required("group is required"),
@@ -54,7 +62,12 @@ const DepositPage = () => {
   const { onOpen, onClose, isOpen } = useDisclosure();
   const [amount, setAmount] = useState<string>("");
   const { depositAmount, setDepositAmount, groupId } = useAuthContext();
-  const [text, setText] = useState<string>("Continue")
+  const [text, setText] = useState<string>("Continue");
+  const [selectedGroup, setSelectedGroup] = useState(null);
+
+  const handleGroupClick = (group: SetStateAction<null>) => {
+    setSelectedGroup(group);
+  };
 
   const {
     mutate: sendBatch,
@@ -74,24 +87,8 @@ const DepositPage = () => {
 
   const account = useActiveAccount();
 
-  const liskSepolia = defineChain(534351);
-
-  const contract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: contractAddress,
-    abi: abi,
-  });
-
-  const tokenContract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: tokenAddress,
-  }) as Readonly<ContractOptions<[]>>;
-
   const approve = async () => {
     try {
-
       const transaction = prepareContractCall({
         contract: tokenContract,
         method: "function approve(address, uint256) returns(bool)",
@@ -105,15 +102,16 @@ const DepositPage = () => {
         account,
         transaction,
       });
-      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      const waitForReceiptOptions = await sendTransaction({
+        account,
+        transaction,
+      });
       console.log(waitForReceiptOptions);
       setText("Approval Successful!");
-
     } catch (error) {
       setText("Approval Failed Try Again");
-
     }
-  }
+  };
 
   const deposit = async () => {
     try {
@@ -123,9 +121,8 @@ const DepositPage = () => {
       const transaction = prepareContractCall({
         contract: contractInstance,
         method: "function deposit(int256)",
-        params: [groupId]
-      })
-
+        params: [groupId],
+      });
 
       if (!account) return;
       setText("Depositing....");
@@ -139,7 +136,10 @@ const DepositPage = () => {
         //   relayerForwarderAddress: "0x081Cc7090aBd4C071100Ff2B3d2C1E3cc0234aF1"
         // }
       });
-      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      const waitForReceiptOptions = await sendTransaction({
+        account,
+        transaction,
+      });
       console.log(waitForReceiptOptions);
       setText("Deposit Successful!");
 
@@ -147,17 +147,14 @@ const DepositPage = () => {
     } catch (err) {
       console.log(err);
       setText("Deposit Failed Try Again");
-
-
     }
-  }
+  };
   const onClick = async () => {
     try {
       console.log("Transferring to client");
       await approve();
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       await deposit();
-
 
       // sendTransaction(tx2);
     } catch (error) {
@@ -170,7 +167,7 @@ const DepositPage = () => {
     isLoading: idLoadings,
     refetch: refectUserGroupId,
   } = useReadContract({
-    contract,
+    contract: contractInstance,
     method: "function getUserGroups(address) returns (int256[])",
     params: [account?.address ?? "0x00000000"],
   });
@@ -183,7 +180,7 @@ const DepositPage = () => {
     handleSubmit,
     control,
     setValue,
-    formState: { },
+    formState: {},
   } = useForm<FormData>({
     resolver: yupResolver(depositSchema),
   });
@@ -193,8 +190,6 @@ const DepositPage = () => {
     // onOpen();
     onClick();
   };
-
-
 
   const handleAmountInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -212,21 +207,23 @@ const DepositPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-
   return (
     <>
       <DepositModal {...{ isOpen, onClose }} />
-      <main className="pt-4">
+      <main className="">
+        <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
+          {/* <ArrowLeft className="mr-2" /> */}
+          <BackButton />
+          <h1 className="text-xl font-bold">Group Savings</h1>
+        </div>
         <PageWrapper>
-          <div className="flex items-center">
-            <BackButton />
-            <PageTitle text="Deposit" />
-          </div>
           <>
-            <h1 className="py-4 text-base font-medium leading-[18px] text-[#0A0F29]">
+            {/* <h1 className="py-4 text-base font-medium leading-[18px] text-[#0A0F29]">
+                            Select a group to make a deposit
+                        </h1> */}
+            <h2 className="mb-4 py-4 text-lg font-semibold leading-[18px] text-[#0A0F29]">
               Select a group to make a deposit
-            </h1>
+            </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
                 <Controller
@@ -246,7 +243,17 @@ const DepositPage = () => {
                 />
               </div>
 
-
+              {selectedGroup && (
+                <div className="mb-6 rounded-lg bg-green-50 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="font-semibold">Group 1</h3>
+                    <button className="flex items-center text-green-600">
+                      <Info size={16} className="mr-1" />
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* </div> */}
               <div className="space-y-3 rounded-lg border border-[#D7D9E4] bg-[#F8FDF5] px-4 py-7 shadow-[0px_4px_8px_0px_#0000000D]">

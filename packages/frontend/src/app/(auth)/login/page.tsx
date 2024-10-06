@@ -4,7 +4,10 @@ import LoginForm from "./components/login-form";
 
 const LoginPage = () => {
   return (
-    <main className="grid place-items-center bg-[#1C350C] text-white">
+    <main
+      className="grid place-items-center bg-[#34581C] bg-[url('/img/bg.jpeg')] bg-cover bg-center bg-no-repeat text-white bg-blend-multiply"
+      // style={{ backgroundImage: "url('/img/bg.jpeg')" }}
+    >
       <PageWrapper className="flex flex-col items-center space-y-6">
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center gap-x-2">

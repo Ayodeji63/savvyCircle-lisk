@@ -1,7 +1,19 @@
 import IconElement from "@/components/common/icon-element";
 import { Icons } from "@/components/common/icons";
 import PageWrapper from "@/components/common/page-wrapper";
-import { Menu } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowDownUp,
+  ArrowRightLeft,
+  CreditCard,
+  LucideIcon,
+  Menu,
+  MoreHorizontal,
+  Plus,
+  PlusCircle,
+  Snowflake,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import { dashboardNavigation } from "./extras";
 import { getContract } from "thirdweb";
@@ -11,8 +23,22 @@ import { abi, contractAddress } from "@/contract";
 import { defineChain } from "thirdweb/chains";
 import { tokenAbi, tokenAddress } from "@/token";
 import { formatEther } from "viem";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useAuthContext } from "@/context/AuthContext";
+
+interface ActionButtonProps {
+  icon: LucideIcon;
+  label: string;
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({ icon: Icon, label }) => (
+  <div className="flex flex-col items-center">
+    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+      <Icon className="text-green-600" size={24} />
+    </div>
+    <span className="text-sm text-gray-600">{label}</span>
+  </div>
+);
 
 const DashboardHeader = () => {
   const liskSepolia = defineChain(534351);
@@ -82,12 +108,13 @@ const DashboardHeader = () => {
     }
   }
 
-  const { data: userBalance, isLoading: tokenBalanceLoading } = useReadContract({
-    contract: tokenContract,
-    method: "function balanceOf(address) returns (uint256)",
-    params: account ? [account.address] : ["0x"],
-  })
-
+  const { data: userBalance, isLoading: tokenBalanceLoading } = useReadContract(
+    {
+      contract: tokenContract,
+      method: "function balanceOf(address) returns (uint256)",
+      params: account ? [account.address] : ["0x"],
+    },
+  );
 
   const { data, isLoading } = useReadContract({
     contract,
@@ -104,22 +131,29 @@ const DashboardHeader = () => {
         <PageWrapper>
           <div className="flex items-center justify-between pb-[14px]">
             <div className="flex items-center gap-x-2">
-              <Icons.logo className="h-[29px] w-[33px]" />
-              <p className="text-base font-medium">SavvyCircle</p>
+              {/* <Icons.logo className="h-[29px] w-[33px]" />
+              <p className="text-base font-medium">SavvyCircle</p> */}
+              <p className="text-2xl font-bold">Welcome</p>
             </div>
             <button>
               <Menu />
             </button>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs font-normal leading-[14px]">
-              Current saving balance
-            </p>
+          <div className="flex w-full items-center justify-between space-y-1">
+            <div>
+              <p className="text-xs font-normal leading-[14px]">
+                Current saving balance
+              </p>
 
-            <p className="text-lg font-semibold leading-6">
-              {formatViemBalance(userBalance ?? BigInt(200000000000)) ??
-                `200,000`}{" "}
-            </p>
+              <p className="text-lg font-semibold leading-6">
+                {formatViemBalance(userBalance ?? BigInt(200000000000)) ??
+                  `200,000`}{" "}
+              </p>
+            </div>
+
+            {/* <button className="bg-lime-400 text-black px-4 py-2 rounded-full flex items-center">
+              <Plus size={14} className="mr-1" /> Add
+            </button> */}
           </div>
         </PageWrapper>
         <PageWrapper className="absolute left-0 right-0 mt-5 grid h-[76px] w-[85%] grid-cols-3 items-center justify-center rounded-[8px] border border-[#D7D9E4] bg-[#F8FDF5] shadow-[0px_4px_8px_0px_#0000000D]">
@@ -134,6 +168,20 @@ const DashboardHeader = () => {
             </Link>
           ))}
         </PageWrapper>
+        <PageWrapper className="absolute left-0 right-0 mt-5 rounded-lg bg-white p-4 shadow-md">
+          <div className="flex justify-between">
+            <ActionButton icon={Wallet} label="Top Up" />
+            {/* <ActionButton icon={CreditCard} label="Card Detail" /> */}
+            {/* <ActionButton icon={PlusCircle} label="Add Card" />
+            <ActionButton icon={Snowflake} label="Freeze" /> */}
+            <ActionButton icon={ArrowDownLeft} label="Withdraw" />
+            <ActionButton icon={ArrowRightLeft} label="Transfer" />
+            <ActionButton icon={MoreHorizontal} label="More" />
+          </div>
+        </PageWrapper>
+        {/* <div className="bg-white p-4 rounded-lg shadow-md">
+          
+        </div> */}
       </header>
     </div>
   );
