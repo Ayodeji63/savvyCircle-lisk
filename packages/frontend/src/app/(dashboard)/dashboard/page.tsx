@@ -142,7 +142,6 @@ const DashboardPage = () => {
           </ElementList>
         </section>
       </PageWrapper>
-      <FloatingNavBar />
     </main>
   );
 };

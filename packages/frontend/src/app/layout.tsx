@@ -4,6 +4,7 @@ import "@/styles/globals.css";
 
 import { type Metadata } from "next";
 import { ThirdwebProvider } from "thirdweb/react";
+import FloatingNavBar from "./Navbar";
 
 
 export const metadata: Metadata = {
@@ -34,6 +35,8 @@ export default function RootLayout({
             {/* </AppKitProvider>
           </Providers> */}
           </ThirdwebProvider>
+          <FloatingNavBar />
+
         </div>
       </body>
     </html>

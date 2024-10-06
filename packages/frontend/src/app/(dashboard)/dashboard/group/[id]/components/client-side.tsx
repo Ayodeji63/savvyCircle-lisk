@@ -237,13 +237,19 @@ const GroupPageClientSide = ({ id }: any) => {
   };
 
   return (
-    <main className="pt-4">
+    <main className="">
+      {groupData && <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
+        {/* <ArrowLeft className="mr-2" /> */}
+        <BackButton />
+        <h1 className="text-xl font-bold">{groupData[9]}</h1>
+      </div>}
       {groupData && (
         <PageWrapper>
-          <div className="flex items-center">
+          {/* <div className="flex items-center">
             <BackButton />
             <PageTitle text={groupData[9]} />
-          </div>
+          </div> */}
+
           <div className="mt-14 space-y-4">
             <div className="h-[246px]">
               <CardStack />

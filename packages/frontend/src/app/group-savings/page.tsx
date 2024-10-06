@@ -45,6 +45,10 @@ import { useAuthContext } from "@/context/AuthContext";
 import { Hash, parseEther } from "viem";
 import { prepareTransactionRequest } from "node_modules/viem/_types/actions/wallet/prepareTransactionRequest";
 import { ArrowLeft, Info } from "lucide-react";
+import WelcomeBanner from "./components/WelcomeBanner";
+import QuickStats from "./components/QuickStats";
+import SavingsTips from "./components/SavingsTips";
+
 
 const depositSchema = object({
   group: string().required("group is required"),
@@ -64,6 +68,7 @@ const DepositPage = () => {
   const { depositAmount, setDepositAmount, groupId } = useAuthContext();
   const [text, setText] = useState<string>("Continue");
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [hoveredId, setHoveredId] = useState<bigint | null>(null);
 
   const handleGroupClick = (group: SetStateAction<null>) => {
     setSelectedGroup(group);
@@ -180,7 +185,7 @@ const DepositPage = () => {
     handleSubmit,
     control,
     setValue,
-    formState: {},
+    formState: { },
   } = useForm<FormData>({
     resolver: yupResolver(depositSchema),
   });
@@ -207,22 +212,26 @@ const DepositPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [totalSavings, growthRate, totalGroups] = [10000, 5.2, 3]; // Fetch these from your API
+
   return (
     <>
       <DepositModal {...{ isOpen, onClose }} />
-      <main className="">
-        <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
-          {/* <ArrowLeft className="mr-2" /> */}
+      <main className="container mx-auto px-4 py-2">
+        {/* <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
           <BackButton />
           <h1 className="text-xl font-bold">Group Savings</h1>
-        </div>
+        </div> */}
+        <WelcomeBanner />
+        <QuickStats
+          totalSavings={totalSavings}
+          growthRate={growthRate}
+          totalGroups={totalGroups}
+        />
         <PageWrapper>
           <>
-            {/* <h1 className="py-4 text-base font-medium leading-[18px] text-[#0A0F29]">
-                            Select a group to make a deposit
-                        </h1> */}
             <h2 className="mb-4 py-4 text-lg font-semibold leading-[18px] text-[#0A0F29]">
-              Select a group to make a deposit
+              Your Savings Group
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
@@ -236,68 +245,23 @@ const DepositPage = () => {
                       className="grid grid-cols-2 gap-x-4 gap-y-2"
                     >
                       {_userGroupId?.map((id) => (
-                        <GroupRadio id={id} key={id.toString()} />
+                        <GroupRadio id={id} key={id.toString()}
+                          isHovered={hoveredId === id}
+                          onMouseEnter={() => setHoveredId(id)}
+                          onMouseLeave={() => setHoveredId(null)}
+                        />
                       ))}
                     </RadioGroup>
                   )}
                 />
               </div>
-
-              {selectedGroup && (
-                <div className="mb-6 rounded-lg bg-green-50 p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="font-semibold">Group 1</h3>
-                    <button className="flex items-center text-green-600">
-                      <Info size={16} className="mr-1" />
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* </div> */}
-              <div className="space-y-3 rounded-lg border border-[#D7D9E4] bg-[#F8FDF5] px-4 py-7 shadow-[0px_4px_8px_0px_#0000000D]">
-                <div className="space-y-4">
-                  <h2 className="text-center text-base font-medium text-[#0A0F29]">
-                    Make a deposit
-                  </h2>
-                  <div>
-                    <Input
-                      placeholder="Enter deposit amount"
-                      className="tect-base font-medium text-[#696F8C] placeholder:text-[#696F8C]"
-                      value={depositAmount}
-                      onChange={handleAmountInput}
-                    />
-                    {/* <FormErrorTextMessage errors={errors.amount} /> */}
-                  </div>
-
-                  <div className="flex items-center justify-center gap-x-5">
-                    {amounts.map((amount, index) => (
-                      <Button
-                        key={`amount-${index}`}
-                        type="button"
-                        className="h-8 w-[67px] text-xs font-normal leading-[14px] text-[#696F8C]"
-                      >
-                        #{numeral(amount).format("0,0")}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <Button className="bg-[#4A9F17]" onClick={onSubmit}>
-                  {pending
-                    ? "Pending..."
-                    : success
-                      ? "Sucessful"
-                      : error
-                        ? "Error"
-                        : "Continue"}
-                </Button>
-              </div>
             </form>
           </>
-          {/* <div className="shadow-[0px_4px_8px_0px_#0000000D] bg-[#F8FDF5] px-4 py-7 space-y-3">
-                    <h2 className="text-center text-[#0A0F29] text-base font-medium">Make a deposit</h2>
-                </div> */}
+
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <SavingsTips />
+            {/* <RecentActivity activities={recentActivities} /> */}
+          </div>
         </PageWrapper>
       </main>
     </>

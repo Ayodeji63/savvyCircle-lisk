@@ -33,7 +33,7 @@ const FloatingNavBar: React.FC = () => {
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 transform rounded-full bg-white px-4 py-2 shadow-lg">
       <ul className="flex space-x-8">
-        <NavItem href="/" icon={Home} isActive={pathname === "/"} />
+        <NavItem href="/dashboard" icon={Home} isActive={pathname === "/dashboard"} />
         <NavItem
           href="/group-savings"
           icon={Users}
