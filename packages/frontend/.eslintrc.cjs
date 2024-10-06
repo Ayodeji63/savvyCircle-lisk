@@ -139,6 +139,7 @@ const config = {
     "@typescript-eslint/space-before-blocks": "off",
     "@typescript-eslint/space-before-function-paren": "off",
     "@typescript-eslint/space-infix-ops": "off",
+    "react/no-unescaped-entities": "off",
     // "@typescript-eslint/consistent-type-imports": [
     //   "warn",
     //   {
