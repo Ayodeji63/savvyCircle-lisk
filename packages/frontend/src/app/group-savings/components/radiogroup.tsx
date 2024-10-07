@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface GroupProps {
     id: bigint;
@@ -31,6 +32,7 @@ interface GroupProps {
 const GroupRadio: React.FC<GroupProps> = ({ id, isHovered, onMouseEnter, onMouseLeave }) => {
     const [groupInfo, setGroupInfo] = useState<any>([]);
     const { setDepositAmount, setGroupId } = useAuthContext();
+    const router = useRouter();
 
     function onDeposit() {
         console.log(id);
@@ -151,16 +153,19 @@ const GroupRadio: React.FC<GroupProps> = ({ id, isHovered, onMouseEnter, onMouse
                             </SheetHeader>
                         </SheetContent>
                     </Sheet>
-                    <Link href={routes.groupById(id.toString())}>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                            }}
-                            className="rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600"
-                        >
-                            <Info size={24} />
-                        </button>
-                    </Link>
+                    {/* <Link href={routes.groupById(id.toString())}> */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("I'm ");
+                            router.push(routes.groupById(id.toString()))
+
+                        }}
+                        className="rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600"
+                    >
+                        <Info size={24} />
+                    </button>
+                    {/* </Link> */}
                 </div>
             )}
         </div>
