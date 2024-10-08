@@ -23,7 +23,6 @@ import {
   useActiveAccount,
   useReadContract,
   useSendBatchTransaction,
-  useSendTransaction,
 } from "thirdweb/react";
 import {
   Address,
@@ -48,7 +47,7 @@ import { ArrowLeft, Info } from "lucide-react";
 import WelcomeBanner from "./components/WelcomeBanner";
 import QuickStats from "./components/QuickStats";
 import SavingsTips from "./components/SavingsTips";
-
+import FloatingNavBar from "../Navbar";
 
 const depositSchema = object({
   group: string().required("group is required"),
@@ -82,14 +81,6 @@ const DepositPage = () => {
     isSuccess: success,
   } = useSendBatchTransaction();
 
-  // const {
-  //   mutate: sendTransaction,
-  //   data: result,
-  //   isPending: pendings,
-  //   isError: errors,
-  //   isSuccess: successs,
-  // } = useSendTransaction();
-
   const account = useActiveAccount();
 
   const approve = async () => {
@@ -102,11 +93,6 @@ const DepositPage = () => {
 
       if (!account) return;
       setText("Approving....");
-
-      const result = await sendTransaction({
-        account,
-        transaction,
-      });
       const waitForReceiptOptions = await sendTransaction({
         account,
         transaction,
@@ -131,16 +117,6 @@ const DepositPage = () => {
 
       if (!account) return;
       setText("Depositing....");
-
-      const result = await sendTransaction({
-        account,
-        transaction,
-        // gasless: {
-        //   provider: "openzeppelin",
-        //   relayerUrl: "https://api.defender.openzeppelin.com/actions/e2aea3df-c8aa-43f7-a43f-a60f42595bb8/runs/webhook/e9f89618-be19-4547-ba52-67b58c2d85be/MnKRcuCDgGFKTqq8YUqup6",
-        //   relayerForwarderAddress: "0x081Cc7090aBd4C071100Ff2B3d2C1E3cc0234aF1"
-        // }
-      });
       const waitForReceiptOptions = await sendTransaction({
         account,
         transaction,
@@ -160,8 +136,6 @@ const DepositPage = () => {
       await approve();
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await deposit();
-
-      // sendTransaction(tx2);
     } catch (error) {
       console.log(error);
     }
@@ -185,7 +159,7 @@ const DepositPage = () => {
     handleSubmit,
     control,
     setValue,
-    formState: { },
+    formState: {},
   } = useForm<FormData>({
     resolver: yupResolver(depositSchema),
   });
@@ -226,13 +200,21 @@ const DepositPage = () => {
         <QuickStats
           totalSavings={totalSavings}
           growthRate={growthRate}
-          totalGroups={totalGroups}
+          totalGroups={Number(_userGroupId?.length)}
         />
         <PageWrapper>
           <>
-            <h2 className="mb-4 py-4 text-lg font-semibold leading-[18px] text-[#0A0F29]">
-              Your Savings Group
-            </h2>
+            {_userGroupId ? (
+              _userGroupId.length > 0 && (
+                <h2 className="mb-4 py-4 text-lg font-semibold leading-[18px] text-[#0A0F29]">
+                  Your Savings Group
+                </h2>
+              )
+            ) : (
+              <h2 className="mb-4 py-4 text-lg font-semibold leading-[18px] text-[#0A0F29]">
+                Join A Telegram Group
+              </h2>
+            )}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
                 <Controller
@@ -245,7 +227,9 @@ const DepositPage = () => {
                       className="grid grid-cols-2 gap-x-4 gap-y-2"
                     >
                       {_userGroupId?.map((id) => (
-                        <GroupRadio id={id} key={id.toString()}
+                        <GroupRadio
+                          id={id}
+                          key={id.toString()}
                           isHovered={hoveredId === id}
                           onMouseEnter={() => setHoveredId(id)}
                           onMouseLeave={() => setHoveredId(null)}
@@ -258,12 +242,13 @@ const DepositPage = () => {
             </form>
           </>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <SavingsTips />
             {/* <RecentActivity activities={recentActivities} /> */}
           </div>
         </PageWrapper>
       </main>
+      <FloatingNavBar />
     </>
   );
 };

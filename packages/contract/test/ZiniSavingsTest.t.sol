@@ -20,6 +20,7 @@ contract ZiniSavingsTest is Test {
     uint256 public constant MONTHLY_CONTRIBUTION = 10_000 ether;
     uint256 public constant CONTRACT_BALANCE = 100_000_000_000 ether;
     int256 public constant GROUP_ID = -145899;
+    int256 public constant GROUP2_ID = 1234;
 
     event GroupCreated(int256 indexed groupId, string name, address admin);
     event MemberJoined(int256 indexed groupId, address member);
@@ -87,6 +88,7 @@ contract ZiniSavingsTest is Test {
         vm.expectEmit(true, false, false, false, address(ziniSavings));
         emit GroupCreated(GROUP_ID, "Flex", address(USER_1));
         ziniSavings.createGroup("Flex", USER_1, GROUP_ID);
+        assert(1 == ziniSavings.groupCount());
         vm.stopPrank();
     }
 
@@ -121,7 +123,7 @@ contract ZiniSavingsTest is Test {
         uint256 user1BalanceBefore = ERC20Mock(token).balanceOf(USER_1);
 
         vm.startPrank(USER_1);
-        ziniSavings.distributeLoans(GROUP_ID);
+        // ziniSavings.distributeLoans(GROUP_ID);
         vm.stopPrank();
         uint256 user1BalanceAfter = ERC20Mock(token).balanceOf(USER_1);
         uint256 loan = user1BalanceAfter - user1BalanceBefore;
@@ -131,7 +133,7 @@ contract ZiniSavingsTest is Test {
 
     function testGetUserOutStandingLoan() public _creategroupAndDeposit {
         vm.startPrank(USER_1);
-        ziniSavings.distributeLoans(GROUP_ID);
+        // ziniSavings.distributeLoans(GROUP_ID);
         uint256 USER1_LOAN = ziniSavings.getOutStandingLoan(GROUP_ID, USER_1);
         console.log(USER1_LOAN);
         vm.stopPrank();
@@ -139,7 +141,7 @@ contract ZiniSavingsTest is Test {
 
     function testRepayLoan() public _creategroupAndDeposit {
         vm.startPrank(USER_1);
-        ziniSavings.distributeLoans(GROUP_ID);
+        // ziniSavings.distributeLoans(GROUP_ID);
         ERC20Mock(token).approve(
             address(ziniSavings),
             MONTHLY_CONTRIBUTION * 2
@@ -160,7 +162,7 @@ contract ZiniSavingsTest is Test {
         _creategroupAndDeposit
     {
         vm.startPrank(USER_1);
-        ziniSavings.distributeLoans(GROUP_ID);
+        // ziniSavings.distributeLoans(GROUP_ID);
         ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
         ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
         vm.stopPrank();
@@ -185,7 +187,7 @@ contract ZiniSavingsTest is Test {
         uint256 user3BalanceBefore = ERC20Mock(token).balanceOf(USER_3);
         uint256 user4BalanceBefore = ERC20Mock(token).balanceOf(USER_4);
 
-        ziniSavings.distributeLoans(GROUP_ID);
+        // ziniSavings.distributeLoans(GROUP_ID);
 
         uint256 user3BalanceAfter = ERC20Mock(token).balanceOf(USER_3);
         uint256 loan = user3BalanceAfter - user3BalanceBefore;
@@ -208,21 +210,243 @@ contract ZiniSavingsTest is Test {
     modifier groupOfTwo() {
         vm.startPrank(USER_1);
         ziniSavings.createGroup("Flex", USER_1, GROUP_ID);
+        ziniSavings.createGroup("Big Things", USER_1, GROUP2_ID);
         ziniSavings.setMonthlyContribution(GROUP_ID, MONTHLY_CONTRIBUTION);
-        ERC20Mock(token).approve(address(ziniSavings), MONTHLY_CONTRIBUTION);
+        ziniSavings.setMonthlyContribution(GROUP2_ID, MONTHLY_CONTRIBUTION);
+
+        ERC20Mock(token).approve(address(ziniSavings), UINT256_MAX);
         ziniSavings.joinGroup(GROUP_ID, USER_2);
+        ziniSavings.joinGroup(GROUP2_ID, USER_2);
 
         ziniSavings.deposit(GROUP_ID);
+        ziniSavings.deposit(GROUP2_ID);
+
         vm.stopPrank();
         vm.startPrank(USER_2);
-        ERC20Mock(token).approve(address(ziniSavings), MONTHLY_CONTRIBUTION);
+        ERC20Mock(token).approve(address(ziniSavings), UINT256_MAX);
+        ziniSavings.deposit(GROUP_ID);
+        ziniSavings.deposit(GROUP2_ID);
+        vm.stopPrank();
+        _;
+    }
+
+    modifier oneGroup() {
+        vm.startPrank(USER_1);
+        ziniSavings.createGroup("Flex", USER_1, GROUP_ID);
+        ziniSavings.setMonthlyContribution(GROUP_ID, MONTHLY_CONTRIBUTION);
+        ERC20Mock(token).approve(address(ziniSavings), UINT256_MAX);
+        ziniSavings.joinGroup(GROUP_ID, USER_2);
+        ziniSavings.deposit(GROUP_ID);
+        vm.stopPrank();
+
+        vm.startPrank(USER_2);
+        ERC20Mock(token).approve(address(ziniSavings), UINT256_MAX);
         ziniSavings.deposit(GROUP_ID);
         vm.stopPrank();
         _;
     }
 
+    function test_checkUpkeep() public oneGroup {
+        bool upkeepNeeded;
+        bytes memory performData;
+        int256[] memory eligibleGroup;
+        uint256 eligibleCount;
+        uint256 user1Debt;
+        uint256 user2Debt;
+
+        for (uint256 i = 0; i < 10; i++) {
+            console.log("Cycle", i + 1);
+
+            // First half of the cycle
+            (upkeepNeeded, performData) = ziniSavings.checkUpkeep("0x");
+            (eligibleGroup, eligibleCount) = abi.decode(
+                performData,
+                (int256[], uint256)
+            );
+            assert(upkeepNeeded == true);
+            assert(eligibleCount == 1);
+            assert(eligibleGroup[0] == GROUP_ID);
+
+            ziniSavings.performUpkeep(performData);
+
+            user1Debt = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+            user2Debt = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+            assert(user1Debt == LOAN_AMOUNT_TO_REPAY);
+            assert(user2Debt == ZERO);
+
+            (upkeepNeeded, performData) = ziniSavings.checkUpkeep("0x");
+            assert(upkeepNeeded == false);
+
+            vm.startPrank(USER_1);
+            ERC20Mock(token).approve(address(ziniSavings), UINT256_MAX);
+            ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
+            assertEq(ziniSavings.getUserDebt(GROUP_ID, USER_1), ZERO);
+            vm.stopPrank();
+
+            // Second half of the cycle
+            (upkeepNeeded, performData) = ziniSavings.checkUpkeep("0x");
+            assert(upkeepNeeded == true);
+            ziniSavings.performUpkeep(performData);
+
+            user1Debt = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+            user2Debt = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+            assert(user1Debt == ZERO);
+            assert(user2Debt == LOAN_AMOUNT_TO_REPAY);
+
+            (upkeepNeeded, performData) = ziniSavings.checkUpkeep("0x");
+            assert(upkeepNeeded == false);
+
+            vm.startPrank(USER_2);
+            ERC20Mock(token).approve(address(ziniSavings), UINT256_MAX);
+            ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
+            assertEq(ziniSavings.getUserDebt(GROUP_ID, USER_2), ZERO);
+            vm.stopPrank();
+
+            console.log(
+                "Group Is First Half",
+                ziniSavings.getGroupIsFirstHalf(GROUP_ID)
+            );
+            console.log(
+                "Group Is Second Half",
+                ziniSavings.getGroupIsSecondHalf(GROUP_ID)
+            );
+
+            // Simulate time passing to allow for next cycle
+            vm.warp(block.timestamp + 90 days);
+        }
+
+        // Final check to ensure the cycle completes as expected
+        (upkeepNeeded, performData) = ziniSavings.checkUpkeep("0x");
+        assert(upkeepNeeded == true);
+
+        ziniSavings.performUpkeep(performData);
+
+        user1Debt = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        user2Debt = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+        assert(user1Debt == LOAN_AMOUNT_TO_REPAY);
+        assert(user2Debt == ZERO);
+
+        (upkeepNeeded, performData) = ziniSavings.checkUpkeep("0x");
+        assert(upkeepNeeded == false);
+    }
+
     function testGroupOfTwo() public groupOfTwo {
-        ziniSavings.distributeLoans(GROUP_ID);
+        // ziniSavings.distributeLoans(GROUP_ID);
+        // console.log(ziniSavings.groupCount());
+
+        /******* Check Upkeep for the first Group ********/
+
+        (bool upkeepNeeded, bytes memory performData) = ziniSavings.checkUpkeep(
+            "0x"
+        );
+        (int256[] memory eligibleGroup, ) = abi.decode(
+            performData,
+            (int256[], uint256)
+        );
+        /******* perform Upkeep for the first Group ********/
+
+        if (upkeepNeeded) {
+            ziniSavings.performUpkeep(performData);
+        }
+        uint256 user1Debt;
+        uint256 user2Debt;
+
+        user1Debt = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        user2Debt = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+
+        /******* Assertions for Group1 ********/
+        assertEq(user1Debt, LOAN_AMOUNT_TO_REPAY);
+        assertEq(user2Debt, ZERO);
+
+        user1Debt = ziniSavings.getUserDebt(GROUP2_ID, USER_1);
+        user2Debt = ziniSavings.getUserDebt(GROUP2_ID, USER_2);
+
+        /******* Assertions for Group2 ********/
+        assertEq(user1Debt, LOAN_AMOUNT_TO_REPAY);
+        assertEq(user2Debt, ZERO);
+
+        /******* Check Upkeep for the second Group ********/
+        bool upkeepNeeded2;
+        bytes memory performData2;
+        (upkeepNeeded2, performData2) = ziniSavings.checkUpkeep("0x");
+        (int256[] memory eligibleGroup2, uint256 eligibleCount) = abi.decode(
+            performData2,
+            (int256[], uint256)
+        );
+        console.log(upkeepNeeded2);
+        assertEq(eligibleCount, 0);
+
+        vm.startPrank(USER_1);
+        ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
+        ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
+        uint256 user1DebtAfter = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        assertEq(user1DebtAfter, ZERO);
+        vm.stopPrank();
+
+        (upkeepNeeded2, performData2) = ziniSavings.checkUpkeep("0x");
+        assert(upkeepNeeded2 == false);
+
+        /******* Assert Eligible group is group 2 ********/
+
+        // if (upkeepNeeded2) {}
+        // vm.expectRevert();
+
+        // uint256 user1Debt2 = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        // uint256 user2Debt2 = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+
+        // (bool _upkeepNeeded, bytes memory _performData3) = ziniSavings
+        //     .checkUpkeep("0x");
+
+        // assert(_upkeepNeeded == false);
+
+        // /******* Assertions for second Group ********/
+        // assertEq(user1Debt2, LOAN_AMOUNT_TO_REPAY);
+        // assertEq(user2Debt2, ZERO);
+
+        // vm.startPrank(USER_1);
+        // ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
+        // ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
+        // uint256 user1DebtAfter = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        // assertEq(user1DebtAfter, ZERO);
+        // vm.stopPrank();
+
+        // /******* Check Upkeep for the first Group ********/
+        // (bool upkeepNeeded3, bytes memory performData3) = ziniSavings
+        //     .checkUpkeep("0x");
+        // (int256[] memory eligibleGroup3, ) = abi.decode(
+        //     performData3,
+        //     (int256[], uint256)
+        // );
+        // // console.log(eligibleGroup3[0]);
+        // // console.log(upkeepNeeded3);
+        // assertEq(eligibleGroup[0], GROUP_ID);
+
+        // if (upkeepNeeded3) {
+        //     ziniSavings.performUpkeep(performData3);
+        // }
+
+        // uint256 user1Debt3 = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        // uint256 user2Debt3 = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+
+        // assertEq(user1Debt3, ZERO);
+        // assertEq(user2Debt3, LOAN_AMOUNT_TO_REPAY);
+
+        // vm.startPrank(USER_2);
+        // ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
+        // ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
+        // uint256 user2DebtAfter = ziniSavings.getUserDebt(GROUP_ID, USER_2);
+        // assertEq(user2DebtAfter, ZERO);
+        // vm.stopPrank();
+    }
+
+    function test_upkeepNeeded_is_false() public groupOfTwo {
+        (bool upkeepNeeded, bytes memory performData) = ziniSavings.checkUpkeep(
+            "0x"
+        );
+
+        if (upkeepNeeded) {
+            ziniSavings.performUpkeep(performData);
+        }
         uint256 user1Debt = ziniSavings.getUserDebt(GROUP_ID, USER_1);
         uint256 user2Debt = ziniSavings.getUserDebt(GROUP_ID, USER_2);
 
@@ -232,6 +456,7 @@ contract ZiniSavingsTest is Test {
         assertEq(user1Debt, LOAN_AMOUNT_TO_REPAY);
         assertEq(user2Debt, ZERO);
 
+        // Repaying Lainds
         vm.startPrank(USER_1);
         ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
         ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
@@ -239,20 +464,25 @@ contract ZiniSavingsTest is Test {
         assertEq(user1DebtAfter, ZERO);
         vm.stopPrank();
 
-        ziniSavings.distributeLoans(GROUP_ID);
+        // Checking eligible groups
+        (bool upkeepNeeded2, bytes memory performData2) = ziniSavings
+            .checkUpkeep("0x");
+        console.log(upkeepNeeded2);
+        int256 eligibleGroup = abi.decode(performData2, (int256));
+        console.log(eligibleGroup);
+
+        assertEq(upkeepNeeded2, true);
+
+        // Distributing loans to second group
+        if (upkeepNeeded) {
+            ziniSavings.performUpkeep(performData);
+        }
 
         uint256 user1Debt2 = ziniSavings.getUserDebt(GROUP_ID, USER_1);
         uint256 user2Debt2 = ziniSavings.getUserDebt(GROUP_ID, USER_2);
 
         assertEq(user1Debt2, ZERO);
         assertEq(user2Debt2, LOAN_AMOUNT_TO_REPAY);
-
-        vm.startPrank(USER_2);
-        ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
-        ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
-        uint256 user2DebtAfter = ziniSavings.getUserDebt(GROUP_ID, USER_2);
-        assertEq(user2DebtAfter, ZERO);
-        vm.stopPrank();
     }
 
     // function testRepayLoanRevert() public _creategroupAndDeposit {

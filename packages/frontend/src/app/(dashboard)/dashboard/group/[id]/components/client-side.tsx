@@ -28,23 +28,18 @@ import GroupInfoCard from "./group-info-card";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { client } from "@/app/client";
-import { contractInstance, liskSepolia } from "@/lib/libs";
+import { contractInstance, liskSepolia, tokenContract } from "@/lib/libs";
 import { contractAddress } from "@/contract";
 import { group } from "console";
 import { formatEther, parseEther } from "viem";
 import { Card, useAuthContext } from "@/context/AuthContext";
 import { tokenAddress } from "@/token";
+import { notification } from "@/utils/notification";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 type Props = {
   id: string;
 };
-
-
-const tokenContract = getContract({
-  client: client,
-  chain: liskSepolia,
-  address: tokenAddress,
-});
 
 const loanSchema = object({
   amount: number()
@@ -61,23 +56,19 @@ interface GroupProps {
 
 const GroupPageClientSide = ({ id }: any) => {
   const { setPage } = useUiStore();
-  const contract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: contractAddress,
-  });
 
   const { CARDS, setCARDS } = useAuthContext();
   const account = useActiveAccount();
   const [loanRepayment, setLoanRepayment] = useState<number>(0);
   const [loanText, setLoanText] = useState("Repay Loan");
   const [request, setRequest] = useState("Request Loan");
+  const [isLoading, setIsLoading] = useState(false);
   const {
     data: groupData,
     isLoading: idLoading,
     refetch: refetchGroupData,
   } = useReadContract({
-    contract,
+    contract: contractInstance,
     method:
       "function groups(int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool,bool,uint256,string,address,uint256)",
     params: [BigInt(id)],
@@ -88,9 +79,9 @@ const GroupPageClientSide = ({ id }: any) => {
     isLoading: loanLoading,
     refetch: refetchLoanData,
   } = useReadContract({
-    contract,
+    contract: contractInstance,
     method:
-      "function loans(address, int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool)",
+      "function loans(address, int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool, bool)",
     params: [account ? account?.address : "0x", BigInt(id)],
   });
 
@@ -125,38 +116,40 @@ const GroupPageClientSide = ({ id }: any) => {
     }
   }
 
-
   const handleAmountInput = (value: number) => {
     setValue("amount", value);
   };
 
-
-
-
   useEffect(() => {
-    console.log('useEffect triggered. groupData:', groupData);
+    console.log("useEffect triggered. groupData:", groupData);
     if (groupData) {
       setCARDS((prevCards: Card[]): Card[] => {
-        return prevCards.map(card => {
+        return prevCards.map((card) => {
           switch (card.id) {
             case 0:
-              return { ...card, value: `#${String(formatViemBalance(groupData[1]))}` };
+              return {
+                ...card,
+                value: `#${String(formatViemBalance(groupData[1]))}`,
+              };
             case 1:
               return { ...card, value: String(groupData[11]) };
             case 2:
-              return { ...card, value: `#${String(formatViemBalance(groupData[2]))}` };
+              return {
+                ...card,
+                value: `#${String(formatViemBalance(groupData[2]))}`,
+              };
             default:
               return card;
           }
         });
       });
     } else {
-      console.log('groupData is null or undefined');
+      console.log("groupData is null or undefined");
     }
   }, [groupData]);
 
   useEffect(() => {
-    console.log('CARDS state updated:', CARDS);
+    console.log("CARDS state updated:", CARDS);
   }, [CARDS]);
 
   useEffect(() => {
@@ -170,7 +163,7 @@ const GroupPageClientSide = ({ id }: any) => {
 
   const approve = async (amount: number) => {
     try {
-      setLoanText("Approving...")
+      setLoanText("Approving...");
       const transaction = prepareContractCall({
         contract: tokenContract,
         method: "function approve(address, uint256) returns(bool)",
@@ -178,71 +171,63 @@ const GroupPageClientSide = ({ id }: any) => {
       });
 
       if (!account) return;
-      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      const waitForReceiptOptions = await sendTransaction({
+        account,
+        transaction,
+      });
       console.log(waitForReceiptOptions);
-
     } catch (error) {
       console.log(error);
       setLoanText("Approved Failed!");
-
     }
-  }
+  };
 
   const repayLoan = async (amount: number) => {
     try {
-
       if (!id) return;
       setLoanText("Repaying....");
       const transaction = prepareContractCall({
         contract: contractInstance,
         method: "function repayLoan(int256, uint256)",
-        params: [id, parseEther(String(amount))]
-      })
+        params: [id, parseEther(String(amount))],
+      });
       if (!account) return;
-      const waitForReceiptOptions = await sendTransaction({ account, transaction });
+      const waitForReceiptOptions = await sendTransaction({
+        account,
+        transaction,
+      });
       console.log(waitForReceiptOptions);
       setLoanText("Loan Repaid! 🎉");
       return waitForReceiptOptions.transactionHash;
     } catch (err) {
       console.log(err);
     }
-  }
-
-  const distributeLoans = async () => {
-    try {
-
-      if (!id) return;
-      setRequest("Requesting....");
-      const transaction = prepareContractCall({
-        contract: contractInstance,
-        method: "function distributeLoans(int256)",
-        params: [id]
-      })
-      if (!account) return;
-      const waitForReceiptOptions = await sendTransaction({ account, transaction });
-      console.log(waitForReceiptOptions);
-      setRequest("Loan Gotten! 🎉");
-      return waitForReceiptOptions.transactionHash;
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  };
 
   const onSubmit = async (data: FormData) => {
-    console.log(data);
-    await approve(data.amount);
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    await repayLoan(data.amount);
-
+    try {
+      console.log(data);
+      setIsLoading(true);
+      await approve(data.amount);
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      await repayLoan(data.amount);
+      notification.success("Loan Repaid 🎉");
+      setIsLoading(false);
+    } catch (e) {
+      setIsLoading(false);
+      notification.error("An error occured");
+    }
   };
 
   return (
     <main className="">
-      {groupData && <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
-        {/* <ArrowLeft className="mr-2" /> */}
-        <BackButton />
-        <h1 className="text-xl font-bold">{groupData[9]}</h1>
-      </div>}
+      {groupData && (
+        <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
+          {/* <ArrowLeft className="mr-2" /> */}
+          <BackButton />
+          <h1 className="text-xl font-bold">{groupData[9]}</h1>
+        </div>
+      )}
       {groupData && (
         <PageWrapper>
           {/* <div className="flex items-center">
@@ -278,53 +263,62 @@ const GroupPageClientSide = ({ id }: any) => {
                     </p>
                   </div>
                 </div>
-                {groupData[7] && <Button className="bg-[#4A9F17]" onClick={distributeLoans}>{request}</Button>}
+                {/**groupData[7] && <Button className="bg-[#4A9F17]" onClick={distributeLoans}>{request}</Button> */}
 
-                <Sheet>
-
-                  <SheetTrigger asChild>
-                    <Button className="bg-[#4A9F17]">Repay Loan</Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="bottom"
-                    className="rounded-tl-[50px] rounded-tr-[50px]"
-                  >
-                    <SheetHeader>
-                      <SheetTitle>Repay loan</SheetTitle>
-                      <SheetDescription className="pb-32">
-                        <form
-                          onSubmit={handleSubmit(onSubmit)}
-                          className="space-y-5"
-                        >
-                          <div>
-                            <Input
-                              placeholder="Enter the amount you want to repay"
-                              className="tect-base font-medium text-[#696F8C] placeholder:text-[#696F8C]"
-                              {...register("amount")}
-                            />
-                            <FormErrorTextMessage errors={errors.amount} />
-                          </div>
-                          <div className="flex items-center justify-center gap-x-5">
-                            {amounts.map((amount, index) => (
-                              <Button
-                                key={`amount-${index}`}
-                                type="button"
-                                className="h-8 w-[67px] text-xs font-normal leading-[14px] text-[#696F8C]"
-                                onClick={() => handleAmountInput(amount)}
-                              >
-                                #{numeral(amount).format("0,0")}
+                {loanData ? (
+                  loanData[4] > 0 && (
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button className="bg-[#4A9F17]">Repay Loan</Button>
+                      </SheetTrigger>
+                      <SheetContent
+                        side="bottom"
+                        className="rounded-tl-[50px] rounded-tr-[50px]"
+                      >
+                        <SheetHeader>
+                          <SheetTitle>Repay loan</SheetTitle>
+                          <SheetDescription className="pb-32">
+                            <form
+                              onSubmit={handleSubmit(onSubmit)}
+                              className="space-y-5"
+                            >
+                              <div>
+                                <Input
+                                  placeholder="Enter the amount you want to repay"
+                                  className="tect-base font-medium text-[#696F8C] placeholder:text-[#696F8C]"
+                                  {...register("amount")}
+                                />
+                                <FormErrorTextMessage errors={errors.amount} />
+                              </div>
+                              <div className="flex items-center justify-center gap-x-5">
+                                {amounts.map((amount, index) => (
+                                  <Button
+                                    key={`amount-${index}`}
+                                    type="button"
+                                    className="h-8 w-[67px] text-xs font-normal leading-[14px] text-[#696F8C]"
+                                    onClick={() => handleAmountInput(amount)}
+                                  >
+                                    #{numeral(amount).format("0,0")}
+                                  </Button>
+                                ))}
+                              </div>
+                              <Button className="bg-[#4A9F17]">
+                                {" "}
+                                {isLoading && <LoadingSpinner />}
+                                {!isLoading && loanText}
                               </Button>
-                            ))}
-                          </div>
-                          <Button className="bg-[#4A9F17]">{loanText}</Button>
-                        </form>
+                            </form>
 
-                        {/* This action cannot be undone. This will permanently delete
+                            {/* This action cannot be undone. This will permanently delete
                       your account and remove your data from our servers. */}
-                      </SheetDescription>
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
+                          </SheetDescription>
+                        </SheetHeader>
+                      </SheetContent>
+                    </Sheet>
+                  )
+                ) : (
+                  <p></p>
+                )}
               </div>
             </div>
 
@@ -341,12 +335,20 @@ const GroupPageClientSide = ({ id }: any) => {
                 />
                 <GroupInfoCard
                   text="Total loan given out"
-                  value={groupData[2] ? `#${String(formatViemBalance(groupData[2]))}` : "0"}
+                  value={
+                    groupData[2]
+                      ? `#${String(formatViemBalance(groupData[2]))}`
+                      : "0"
+                  }
                   icon="requestLoan"
                 />
                 <GroupInfoCard
                   text="Total repaid"
-                  value={groupData[2] ? `#${String(formatViemBalance(groupData[3]))}` : "0"}
+                  value={
+                    groupData[2]
+                      ? `#${String(formatViemBalance(groupData[3]))}`
+                      : "0"
+                  }
                   icon="repayLoan"
                 />
               </div>
@@ -410,4 +412,3 @@ const GroupPageClientSide = ({ id }: any) => {
 };
 
 export default GroupPageClientSide;
-

@@ -29,10 +29,7 @@ import { PrismaClient } from "@prisma/client";
 import { scrollSepoliaTestnet } from "thirdweb/chains";
 import { liskSepolia } from "@/lib/libs";
 import prisma from "@/lib/db";
-
-// const prisma = new PrismaClient();
-
-// const liskSepolia = defineChain(4202);
+import { notification } from "@/utils/notification";
 
 const loginFormSchema = object({
   name: string().required("Telegram username is required"),
@@ -48,19 +45,7 @@ const LoginForm = () => {
   const router = useRouter();
   const { userGroupId, setUserGroupId } = useAuthContext();
   const [showSignUp, setShowSignUp] = useState(false);
-
-  // useEffect(() => {
-  //   if (account || wallet) {
-  //     router.push('/dashboard')
-  //   }
-  // }, [account, wallet]);
-
-  const contract = getContract({
-    client: client,
-    chain: scrollSepoliaTestnet,
-    address: contractAddress,
-    // abi: abi, // Uncomment and provide ABI if needed
-  });
+  const [loading, setLoading] = useState(false);
 
   console.log(userGroupId);
 
@@ -79,6 +64,7 @@ const LoginForm = () => {
   const onSubmit = async (data: FormData) => {
     try {
       console.log(data);
+      setLoading(true);
       // router.replace(routes.dashboard);
       const params = {
         address: String(account?.address),
@@ -86,8 +72,12 @@ const LoginForm = () => {
       };
 
       await createUser(params);
+      setLoading(false);
+      notification.success("Signup Successful");
     } catch (error) {
       console.log(error);
+      setLoading(false);
+      notification.error("Signup Failed");
     }
 
     router.push("/dashboard");
@@ -165,9 +155,9 @@ const LoginForm = () => {
       {account && (
         <Button
           className="bg-white text-black"
-        // onClick={onOpen} disabled={isOpen}
+          // onClick={onOpen} disabled={isOpen}
         >
-          {isOpen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Sign up
         </Button>
       )}
@@ -175,14 +165,13 @@ const LoginForm = () => {
         client={client}
         accountAbstraction={{
           chain: liskSepolia,
-          sponsorGas: true
+          sponsorGas: true,
         }}
         wallets={[
           inAppWallet({
             auth: {
               options: ["phone", "email"],
             },
-
           }),
         ]}
       />

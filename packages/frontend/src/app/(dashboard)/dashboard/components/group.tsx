@@ -9,8 +9,7 @@ import { client } from "../../../../app/client";
 import { contractAddress } from "../../../../contract";
 import { formatEther } from "viem";
 import { group } from "console";
-
-const liskSepolia = defineChain(534351);
+import { contractInstance } from "@/lib/libs";
 
 interface GroupProps {
   id: bigint;
@@ -20,18 +19,12 @@ const Group: React.FC<GroupProps> = ({ id }) => {
   const account = useActiveAccount();
   const [groupInfo, setGroupInfo] = useState<any>([]);
 
-  const contract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: contractAddress,
-  });
-
   const {
     data: groupData,
     isLoading: idLoading,
     refetch: refetchGroupData,
   } = useReadContract({
-    contract,
+    contract: contractInstance,
     method:
       "function groups(int256) returns (uint256,uint256,uint256,uint256,uint256,bool,bool,bool,uint256,string,address,uint256)",
     params: [id],

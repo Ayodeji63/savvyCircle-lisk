@@ -5,7 +5,7 @@ import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { ThirdwebProvider } from "thirdweb/react";
 import FloatingNavBar from "./Navbar";
-
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Savvy Circle",
@@ -35,8 +35,7 @@ export default function RootLayout({
             {/* </AppKitProvider>
           </Providers> */}
           </ThirdwebProvider>
-          <FloatingNavBar />
-
+          <Toaster />
         </div>
       </body>
     </html>

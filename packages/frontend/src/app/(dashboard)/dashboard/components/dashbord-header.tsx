@@ -25,6 +25,7 @@ import { tokenAbi, tokenAddress } from "@/token";
 import { formatEther } from "viem";
 import React, { useEffect } from "react";
 import { useAuthContext } from "@/context/AuthContext";
+import { contractInstance, tokenContract } from "@/lib/libs";
 
 interface ActionButtonProps {
   icon: LucideIcon;
@@ -34,43 +35,22 @@ interface ActionButtonProps {
 const ActionButton: React.FC<ActionButtonProps> = ({ icon: Icon, label }) => (
   <div className="flex flex-col items-center">
     <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-      <Icon className="text-green-600" size={24} />
+      <Icon className="text-green-600" size={20} />
     </div>
     <span className="text-sm text-gray-600">{label}</span>
   </div>
 );
 
 const DashboardHeader = () => {
-  const liskSepolia = defineChain(534351);
-
   const account = useActiveAccount();
   const { userGroupId, setUserGroupId } = useAuthContext();
-
-  const contract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: contractAddress,
-    // abi: abi,
-  });
-
-  const tokenContract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: tokenAddress,
-    // abi: abi,
-  });
-
-  // 0x5C2103Cc49a53265511A9E6dC9fE4840211A6aF8
-  // -4596867717
-
-  // -1002475953402
 
   const {
     data: _userGroupId,
     isLoading: idLoading,
     refetch: refectUserGroupId,
   } = useReadContract({
-    contract,
+    contract: contractInstance,
     method: "function getUserGroups(address) returns (int256[])",
     params: [account?.address ?? "0x00000000"],
   });
@@ -117,7 +97,7 @@ const DashboardHeader = () => {
   );
 
   const { data, isLoading } = useReadContract({
-    contract,
+    contract: contractInstance,
     method: "function LOAN_DURATION() returns (uint256)",
     params: [],
   });

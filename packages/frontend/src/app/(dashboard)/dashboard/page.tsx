@@ -25,27 +25,19 @@ import {
 } from "lucide-react";
 import FloatingNavBar from "@/app/Navbar";
 import { Button } from "antd";
+import { contractInstance } from "@/lib/libs";
 // import EmptyState from "@/components/common/empty-state";
 
 const DashboardPage = () => {
-  const liskSepolia = defineChain(534351);
-  // const { userGroupId } = useAuthContext()
   const account = useActiveAccount();
   const [userGroup, setUserGroup] = useState<any>([]);
-
-  const contract = getContract({
-    client: client,
-    chain: liskSepolia,
-    address: contractAddress,
-    abi: abi,
-  });
 
   const {
     data: _userGroupId,
     isLoading: idLoadings,
     refetch: refectUserGroupId,
   } = useReadContract({
-    contract,
+    contract: contractInstance,
     method: "function getUserGroups(address) returns (int256[])",
     params: [account?.address ?? "0x00000000"],
   });
@@ -142,6 +134,7 @@ const DashboardPage = () => {
           </ElementList>
         </section>
       </PageWrapper>
+      <FloatingNavBar />
     </main>
   );
 };

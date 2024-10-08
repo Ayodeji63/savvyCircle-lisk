@@ -49,6 +49,10 @@ ifeq ($(findstring --network scrollSepolia,$(ARGS)),--network scrollSepolia)
 	NETWORK_ARGS := --rpc-url $(SCROLL_SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --etherscan-api-key $(SCROLL_API_KEY) --verify   --verifier-url https://api-sepolia.scrollscan.com/api -vvvv 
 endif
 
+ifeq ($(findstring --network baseSepolia,$(ARGS)),--network baseSepolia)
+	NETWORK_ARGS := --rpc-url $(BASE_SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --etherscan-api-key $(BASE_API_KEY) --verify   --chain-id 84532 -vvvv 
+endif
+
 deploy:
 	@forge script script/ziniSavings/DeployZini.s.sol:DeployZini $(NETWORK_ARGS)
 

@@ -26,8 +26,10 @@ pragma solidity ^0.8.20;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import {console} from "forge-std/console.sol";
 
-contract ZiniSavings is ReentrancyGuard {
+contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     ///////////////////////////
     // Type of  contract    //
     //////////////////////////
@@ -55,6 +57,8 @@ contract ZiniSavings is ReentrancyGuard {
         string name;
         address admin;
         uint256 memberCount;
+        uint256 loanRepaymentDuration;
+        uint256 loanCycleCount;
         mapping(address => Member) addressToMember;
         mapping(address => uint) memberSavings;
         mapping(address => bool) hasReceivedLoan;
@@ -68,6 +72,7 @@ contract ZiniSavings is ReentrancyGuard {
         uint256 debt;
         bool fullyRepaid;
         bool isFirstBatch;
+        bool isSecondBatch;
     }
 
     ///////////////////////////
@@ -76,12 +81,15 @@ contract ZiniSavings is ReentrancyGuard {
     IERC20 public immutable token;
     mapping(int256 => Group) public groups;
     mapping(address => int256[]) private userGroups;
+    mapping(address => uint256) usersTotalSavings;
     uint256 public groupCount;
+    int256[] public groupIds;
     mapping(address => mapping(int256 => Loan)) public loans;
     uint256 public constant LOAN_DURATION = 90 days; // 3 months
     uint256 public constant LOAN_INTEREST_RATE = 5; // 5%
     uint256 public constant LOCK_PERIOD = 365 days; // 12 months
     uint256 public constant LOAN_PRECISION = 3;
+    uint256 public constant MAX_CYCLES = 4;
 
     ///////////////////////////
     // Events               //
@@ -121,13 +129,14 @@ contract ZiniSavings is ReentrancyGuard {
         address user,
         int256 _groupId
     ) external {
-        groupCount++;
         Group storage newGroup = groups[_groupId];
         // newGroup.monthlyContribution = _monthlyContribution;
         newGroup.creationTime = block.timestamp;
         newGroup.name = _name;
         newGroup.admin = msg.sender;
         _joinGroup(_groupId, user);
+        groupCount++;
+        groupIds.push(_groupId);
 
         emit GroupCreated(_groupId, _name, msg.sender);
     }
@@ -136,6 +145,8 @@ contract ZiniSavings is ReentrancyGuard {
         Group storage group = groups[_groupId];
         group.monthlyContribution = _amount;
     }
+
+    function setRepaymentDuration(int256 _groupId, uint256 _time) external {}
 
     function joinGroup(int256 _groupId, address user) external {
         _joinGroup(_groupId, user);
@@ -156,32 +167,88 @@ contract ZiniSavings is ReentrancyGuard {
         group.memberSavings[msg.sender] = group.memberSavings[
             msg.sender
         ] += group.monthlyContribution;
+        usersTotalSavings[msg.sender] = usersTotalSavings[msg.sender] += group
+            .monthlyContribution;
 
         emit SavingsDeposited(_groupId, msg.sender, group.monthlyContribution);
     }
 
-    function distributeLoans(int256 _groupId) external {
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        int256[] memory eligibleGroups = new int256[](groupCount);
+        uint256 eligibleCount = 0;
+
+        for (uint i = 0; i < groupCount; ++i) {
+            int256 groupId = groupIds[i];
+            Group storage group = groups[groupId];
+            if (isGroupEligibleForLoanDistribution(group)) {
+                eligibleGroups[eligibleCount] = groupId;
+                eligibleCount++;
+            }
+        }
+        upkeepNeeded = eligibleCount > 0;
+        performData = abi.encode(eligibleGroups, eligibleCount);
+        return (upkeepNeeded, performData);
+    }
+
+    // function checkUpkeep(
+    //     bytes calldata /* checkData */
+    // )
+    //     external
+    //     view
+    //     override
+    //     returns (bool upkeepNeeded, bytes memory performData)
+    // {
+    //     for (uint i = 0; i < groupCount; ++i) {
+    //         int256 groupId = groupIds[i];
+    //         Group storage group = groups[groupId];
+    //         if (isGroupEligibleForLoanDistribution(group)) {
+    //             upkeepNeeded = true;
+    //             performData = abi.encode(groupId);
+    //             return (upkeepNeeded, performData);
+    //         }
+    //     }
+    //     return (false, bytes(""));
+    // }
+
+    function performUpkeep(bytes calldata performData) external override {
+        (int256[] memory eligibleGroups, uint256 eligibleCount) = abi.decode(
+            performData,
+            (int256[], uint256)
+        );
+
+        for (uint i = 0; i < eligibleCount; i++) {
+            int256 groupId = eligibleGroups[i];
+            Group storage group = groups[groupId];
+            console.log(isGroupEligibleForLoanDistribution(group));
+
+            if (isGroupEligibleForLoanDistribution(group)) {
+                distributeLoanForGroup(groupId);
+            }
+        }
+    }
+
+    // function performUpkeep(bytes calldata performData) external override {
+    //     int256 groupId = abi.decode(performData, (int256));
+    //     Group storage group = groups[groupId];
+
+    //     if (isGroupEligibleForLoanDistribution(group)) {
+    //         distributeLoanForGroup(groupId);
+    //     }
+    // }
+
+    function distributeLoanForGroup(int256 _groupId) internal {
         Group storage group = groups[_groupId];
-        // require(group.memberCount % 2 == 0, "Group size must be even");
-        // require(group.memberCount >= 2, "Group must have at least 2 members");
-        // require(
-        //     group.totalSavings >= group.monthlyContribution * group.memberCount,
-        //     "Insufficient group savings"
-        // );
-
         uint256 halfGroupSize = group.memberCount / 2;
-        ////
-        // 2 / 2 = 1
-
         uint256 totalLoanAmount = group.totalSavings;
         uint256 individualLoanAmount = (totalLoanAmount / group.memberCount) *
             LOAN_PRECISION;
-
-        // if groupsize = 4
-        // monthlyDistribution = 10k
-        // totalSavings in a month = 40k
-        // individual = 10; * 3;
-        //
 
         if (!group.firstHalfLoanDistributed) {
             _distributeLoansTERNAL(
@@ -189,24 +256,23 @@ contract ZiniSavings is ReentrancyGuard {
                 0,
                 halfGroupSize,
                 individualLoanAmount,
-                true
+                true,
+                false
             );
-            group.loanGivenOut += group.monthlyContribution * 3;
-        } else if (!group.secondHalfLoanDistributed) {
-            // require(
-            //     group.firstBatchRepaidCount == halfGroupSize,
-            //     "First batch loans not fully repaid"
-            // );
+            group.firstHalfLoanDistributed = true;
+        } else if (group.firstHalfLoanDistributed) {
             _distributeLoansTERNAL(
                 _groupId,
                 halfGroupSize,
-                group.members.length,
+                group.memberCount,
                 individualLoanAmount,
-                false
+                false,
+                true
             );
             group.secondHalfLoanDistributed = true;
-            group.loanGivenOut += group.monthlyContribution * 3;
         }
+
+        group.loanGivenOut += group.monthlyContribution * 3;
     }
 
     function repayLoan(int256 _groupId, uint256 _amount) external {
@@ -229,6 +295,17 @@ contract ZiniSavings is ReentrancyGuard {
 
             if (loan.isFirstBatch) {
                 group.firstBatchRepaidCount++;
+            }
+            if (loan.isSecondBatch) {
+                if (
+                    group.firstHalfLoanDistributed &&
+                    group.secondHalfLoanDistributed
+                ) {
+                    group.loanCycleCount++;
+                    group.firstHalfLoanDistributed = false;
+                    group.secondHalfLoanDistributed = false;
+                    group.firstBatchRepaidCount = 0;
+                }
             }
         }
     }
@@ -255,44 +332,60 @@ contract ZiniSavings is ReentrancyGuard {
         emit MemberJoined(_groupId, user);
     }
 
+    function isGroupEligibleForLoanDistribution(
+        Group storage group
+    ) internal view returns (bool) {
+        return
+            group.memberCount % 2 == 0 &&
+            group.memberCount >= 2 &&
+            group.totalSavings >=
+            group.monthlyContribution * group.memberCount &&
+            group.monthlyContribution != 0 &&
+            (!group.firstHalfLoanDistributed ||
+                (group.firstHalfLoanDistributed &&
+                    !group.secondHalfLoanDistributed &&
+                    group.firstBatchRepaidCount == group.memberCount / 2));
+    }
+
     function _distributeLoansTERNAL(
         int256 _groupId,
         uint256 startIndex,
         uint256 endIndex,
         uint256 loanAmount,
-        bool isFirstBatch
+        bool isFirstBatch,
+        bool isSecondBatch
     ) internal nonReentrant {
         Group storage group = groups[_groupId];
 
         uint256 totalLoanWithInterest = loanAmount +
             ((loanAmount * LOAN_INTEREST_RATE) / 100);
         uint256 monthlyPayment = totalLoanWithInterest / 3;
-
-        for (uint i = startIndex; i < endIndex; i++) {
+        for (uint256 i = startIndex; i < endIndex; i++) {
             address borrower = group.members[i];
-
-            token.safeTransfer(borrower, loanAmount);
+            // if (!group.hasReceivedLoan[borrower]) {
+            token.transfer(borrower, loanAmount);
             loans[borrower][_groupId] = Loan({
                 totalAmount: totalLoanWithInterest,
                 amountRepaid: 0,
                 monthlyPayment: monthlyPayment,
                 nextPaymentDue: block.timestamp + 30 days,
+                debt: totalLoanWithInterest,
                 fullyRepaid: false,
                 isFirstBatch: isFirstBatch,
-                debt: totalLoanWithInterest
+                isSecondBatch: isSecondBatch
             });
             group.hasReceivedLoan[borrower] = true;
-            group.loanRepaid = false;
             emit LoanDistributed(_groupId, borrower, loanAmount, isFirstBatch);
+            // }
         }
 
-        if (isFirstBatch) {
-            group.firstHalfLoanDistributed = true;
-            group.secondHalfLoanDistributed = false;
-        } else {
-            group.firstHalfLoanDistributed = false;
-            group.secondHalfLoanDistributed = true;
-        }
+        // if (isFirstBatch) {
+        //     group.firstHalfLoanDistributed = true;
+        //     group.secondHalfLoanDistributed = false;
+        // } else {
+        //     group.firstHalfLoanDistributed = false;
+        //     group.secondHalfLoanDistributed = true;
+        // }
     }
 
     ///////////////////////////
@@ -366,5 +459,20 @@ contract ZiniSavings is ReentrancyGuard {
         address user
     ) public view returns (uint256) {
         return groups[_groupId].memberSavings[user];
+    }
+
+    function getHasReceivedLoan(
+        int256 _groupId,
+        address user
+    ) public view returns (bool) {
+        return groups[_groupId].hasReceivedLoan[user];
+    }
+
+    function getGroupIsFirstHalf(int256 _groupId) public view returns (bool) {
+        return groups[_groupId].firstHalfLoanDistributed;
+    }
+
+    function getGroupIsSecondHalf(int256 _groupId) public view returns (bool) {
+        return groups[_groupId].secondHalfLoanDistributed;
     }
 }

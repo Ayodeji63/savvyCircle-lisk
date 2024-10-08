@@ -16,7 +16,10 @@ contract HelperConfig is Script {
 
     constructor() {
         if (block.chainid == 4202 || block.chainid == 534351) {
-            activeNetworkConfig = getLiskEthConfig();
+            activeNetworkConfig = getOtherChainConfig();
+        }
+        if (block.chainid == 84532) {
+            activeNetworkConfig = getBaseSepoliaConfig();
         } else {
             activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
@@ -34,14 +37,26 @@ contract HelperConfig is Script {
             });
     }
 
-    function getLiskEthConfig() public returns (NetworkConfig memory) {
+    function getOtherChainConfig() public returns (NetworkConfig memory) {
         vm.startBroadcast();
         // ERC20Mock _token = new ERC20Mock();
         vm.stopBroadcast();
-
+        // 0x4cbeb5E0793b6b741E32D20349A33938Fe9eCF3f
         return
             NetworkConfig({
                 token: 0x75cc21cB369C86DEb89d31ef522FeD38223C08fe,
+                deployerKey: vm.envUint("PRIVATE_KEY")
+            });
+    }
+
+    function getBaseSepoliaConfig() public returns (NetworkConfig memory) {
+        vm.startBroadcast();
+        // ERC20Mock _token = new ERC20Mock();
+        vm.stopBroadcast();
+        // 0x4cbeb5E0793b6b741E32D20349A33938Fe9eCF3f
+        return
+            NetworkConfig({
+                token: 0x4cbeb5E0793b6b741E32D20349A33938Fe9eCF3f,
                 deployerKey: vm.envUint("PRIVATE_KEY")
             });
     }

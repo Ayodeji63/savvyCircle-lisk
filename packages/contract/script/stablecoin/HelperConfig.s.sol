@@ -29,8 +29,12 @@ contract HelperConfig is Script {
         if (block.chainid == 11155111) {
             activeNetworkConfig = getSepoliaEthConfig();
         }
-        if (block.chainid == 4202 || block.chainid == 534351) {
-            activeNetworkConfig = getLiskEthConfig();
+        if (
+            block.chainid == 4202 ||
+            block.chainid == 534351 ||
+            block.chainid == 84532
+        ) {
+            activeNetworkConfig = getOtherChainConfig();
         } else {
             activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
@@ -77,7 +81,7 @@ contract HelperConfig is Script {
             });
     }
 
-    function getLiskEthConfig() public returns (NetworkConfig memory) {
+    function getOtherChainConfig() public returns (NetworkConfig memory) {
         if (activeNetworkConfig.wethUsdPriceFeed != address(0)) {
             return activeNetworkConfig;
         }
