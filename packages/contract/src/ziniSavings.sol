@@ -81,7 +81,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     IERC20 public immutable token;
     mapping(int256 => Group) public groups;
     mapping(address => int256[]) private userGroups;
-    mapping(address => uint256) usersTotalSavings;
+    mapping(address => uint256) public usersTotalSavings;
     uint256 public groupCount;
     int256[] public groupIds;
     mapping(address => mapping(int256 => Loan)) public loans;
@@ -96,22 +96,31 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     //////////////////////////
     event GroupCreated(int256 indexed groupId, string name, address admin);
     event MemberJoined(int256 indexed groupId, address indexed member);
-    event DepositMade(int256 indexed groupId, address member, uint256 amount);
+    event SavingsWithdraw(
+        int256 indexed groupId,
+        address indexed owner,
+        uint256 indexed amount
+    );
+    event DepositMade(
+        int256 indexed groupId,
+        address indexed member,
+        uint256 indexed amount
+    );
     event SavingsDeposited(
         int256 indexed groupId,
-        address member,
-        uint256 amount
+        address indexed member,
+        uint256 indexed amount
     );
     event LoanDistributed(
         int256 indexed groupId,
-        address borrower,
-        uint256 amount,
+        address indexed borrower,
+        uint256 indexed amount,
         bool isFirstBatch
     );
     event LoanRepayment(
         int256 indexed groupId,
-        address borrower,
-        uint256 amount
+        address indexed borrower,
+        uint256 indexed amount
     );
 
     ///////////////////////////
@@ -173,6 +182,15 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         emit SavingsDeposited(_groupId, msg.sender, group.monthlyContribution);
     }
 
+    // Follow CEI = Check Effect Interactions
+    function withdrawFromGroup(int256 _groupId, uint256 _amount) public {
+        Group storage group = groups[_groupId];
+        require(group.memberSavings[msg.sender] >= _amount, "Low Savings");
+        group.memberSavings[msg.sender] -= _amount;
+        emit SavingsWithdraw(_groupId, msg.sender, _amount);
+        token.transfer(msg.sender, _amount);
+    }
+
     function checkUpkeep(
         bytes calldata /* checkData */
     )
@@ -197,26 +215,6 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         return (upkeepNeeded, performData);
     }
 
-    // function checkUpkeep(
-    //     bytes calldata /* checkData */
-    // )
-    //     external
-    //     view
-    //     override
-    //     returns (bool upkeepNeeded, bytes memory performData)
-    // {
-    //     for (uint i = 0; i < groupCount; ++i) {
-    //         int256 groupId = groupIds[i];
-    //         Group storage group = groups[groupId];
-    //         if (isGroupEligibleForLoanDistribution(group)) {
-    //             upkeepNeeded = true;
-    //             performData = abi.encode(groupId);
-    //             return (upkeepNeeded, performData);
-    //         }
-    //     }
-    //     return (false, bytes(""));
-    // }
-
     function performUpkeep(bytes calldata performData) external override {
         (int256[] memory eligibleGroups, uint256 eligibleCount) = abi.decode(
             performData,
@@ -233,15 +231,6 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
             }
         }
     }
-
-    // function performUpkeep(bytes calldata performData) external override {
-    //     int256 groupId = abi.decode(performData, (int256));
-    //     Group storage group = groups[groupId];
-
-    //     if (isGroupEligibleForLoanDistribution(group)) {
-    //         distributeLoanForGroup(groupId);
-    //     }
-    // }
 
     function distributeLoanForGroup(int256 _groupId) internal {
         Group storage group = groups[_groupId];
@@ -328,8 +317,8 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         // group.isMember[msg.sender] = true;
         group.addressToMember[user].isMember = true;
         groups[_groupId].memberCount++;
-        userGroups[user].push(_groupId);
         emit MemberJoined(_groupId, user);
+        userGroups[user].push(_groupId);
     }
 
     function isGroupEligibleForLoanDistribution(

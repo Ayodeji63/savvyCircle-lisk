@@ -116,9 +116,11 @@ const GroupRadio: React.FC<GroupProps> = ({
       setIsLoading(true);
       await approve();
       await new Promise((resolve) => setTimeout(resolve, 3000));
-      await deposit();
-      setIsLoading(false);
-      notification.success("Deposit Successful 🎉");
+      const hash = await deposit();
+      if (hash) {
+        setIsLoading(false);
+        notification.success("Deposit Successful 🎉");
+      }
 
       // sendTransaction(tx2);
     } catch (error) {
