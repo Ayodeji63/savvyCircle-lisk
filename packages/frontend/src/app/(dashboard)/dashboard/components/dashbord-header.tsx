@@ -26,14 +26,21 @@ import { formatEther } from "viem";
 import React, { useEffect } from "react";
 import { useAuthContext } from "@/context/AuthContext";
 import { contractInstance, tokenContract } from "@/lib/libs";
+import { notification } from "@/utils/notification";
+import { useRouter } from "next/navigation";
 
 interface ActionButtonProps {
   icon: LucideIcon;
   label: string;
+  action: () => void;
 }
 
-const ActionButton: React.FC<ActionButtonProps> = ({ icon: Icon, label }) => (
-  <div className="flex flex-col items-center">
+const ActionButton: React.FC<ActionButtonProps> = ({
+  icon: Icon,
+  label,
+  action,
+}) => (
+  <div className="flex flex-col items-center" onClick={() => action()}>
     <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
       <Icon className="text-green-600" size={20} />
     </div>
@@ -44,6 +51,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ icon: Icon, label }) => (
 const DashboardHeader = () => {
   const account = useActiveAccount();
   const { userGroupId, setUserGroupId } = useAuthContext();
+  const router = useRouter();
 
   const {
     data: _userGroupId,
@@ -88,13 +96,15 @@ const DashboardHeader = () => {
     }
   }
 
-  const { data: userBalance, isLoading: tokenBalanceLoading } = useReadContract(
-    {
-      contract: tokenContract,
-      method: "function balanceOf(address) returns (uint256)",
-      params: account ? [account.address] : ["0x"],
-    },
-  );
+  const {
+    data: userBalance,
+    isLoading: tokenBalanceLoading,
+    refetch: refetchBalance,
+  } = useReadContract({
+    contract: tokenContract,
+    method: "function balanceOf(address) returns (uint256)",
+    params: account ? [account.address] : ["0x"],
+  });
 
   const { data, isLoading } = useReadContract({
     contract: contractInstance,
@@ -102,9 +112,21 @@ const DashboardHeader = () => {
     params: [],
   });
 
-  console.log("Data is given as", data);
-  console.log("Wallet is given as", account?.address);
-  console.log("User Token balance is ", userBalance);
+  function transfer() {
+    try {
+      router.push("/transfer");
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  function comingSooon() {
+    notification.success("Coming Soon");
+  }
+
+  useEffect(() => {
+    refetchBalance();
+  }, []);
+
   return (
     <div className="fixed grid h-[192px] w-full place-items-center rounded-bl-[30px] rounded-br-[30px] bg-[#4A9F17]">
       <header className="relative w-full text-white">
@@ -150,13 +172,25 @@ const DashboardHeader = () => {
         </PageWrapper>
         <PageWrapper className="absolute left-0 right-0 mt-5 rounded-lg bg-white p-4 shadow-md">
           <div className="flex justify-between">
-            <ActionButton icon={Wallet} label="Top Up" />
+            <ActionButton icon={Wallet} label="Top Up" action={comingSooon} />
             {/* <ActionButton icon={CreditCard} label="Card Detail" /> */}
             {/* <ActionButton icon={PlusCircle} label="Add Card" />
             <ActionButton icon={Snowflake} label="Freeze" /> */}
-            <ActionButton icon={ArrowDownLeft} label="Withdraw" />
-            <ActionButton icon={ArrowRightLeft} label="Transfer" />
-            <ActionButton icon={MoreHorizontal} label="More" />
+            <ActionButton
+              icon={ArrowDownLeft}
+              label="Withdraw"
+              action={comingSooon}
+            />
+            <ActionButton
+              icon={ArrowRightLeft}
+              label="Transfer"
+              action={transfer}
+            />
+            <ActionButton
+              icon={MoreHorizontal}
+              label="More"
+              action={comingSooon}
+            />
           </div>
         </PageWrapper>
         {/* <div className="bg-white p-4 rounded-lg shadow-md">

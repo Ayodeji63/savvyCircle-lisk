@@ -11,10 +11,10 @@ const LoginPage = () => {
       <PageWrapper className="flex flex-col items-center space-y-6">
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center gap-x-2">
-            <Icons.logo className="h-[25px] w-[29px]" />
-            <p className="text-base font-medium">SavvyCircle</p>
+            <Icons.logo className="h-12 w-12" />
+            <p className="text-xl font-medium">SavvyCircle</p>
           </div>
-          <p className="text-center text-xs font-normal leading-[14px]">
+          <p className="text-center font-medium leading-[18px]">
             SavvyCircle is a dApp for group savings and loans with Telegram
             integration, offering secure, automated transactions via blockchain.
           </p>

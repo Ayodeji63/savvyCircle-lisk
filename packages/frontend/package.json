@@ -24,8 +24,12 @@
   },
   "dependencies": {
     "@commitlint/cli": "^19.5.0",
-    "@heroicons/react": "^2.0.11",
     "@commitlint/config-conventional": "^19.5.0",
+    "@dicebear/avatars": "^4.10.8",
+    "@dicebear/avatars-initials-sprites": "^4.10.8",
+    "@dicebear/collection": "^9.2.2",
+    "@dicebear/core": "^9.2.2",
+    "@heroicons/react": "^2.0.11",
     "@hookform/resolvers": "^3.9.0",
     "@prisma/client": "5.20.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",

@@ -5,11 +5,11 @@ import { getContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
 import { tokenAddress } from "@/token";
 
-export const liskSepolia = defineChain(84532);
+export const baseSepolia = defineChain(84532);
 
 export const contractInstance = getContract({
   client: client,
-  chain: liskSepolia,
+  chain: baseSepolia,
   address: contractAddress,
 });
 
@@ -17,6 +17,6 @@ export const contractInstance = getContract({
 
 export const tokenContract = getContract({
   client: client,
-  chain: liskSepolia,
+  chain: baseSepolia,
   address: tokenAddress,
 });

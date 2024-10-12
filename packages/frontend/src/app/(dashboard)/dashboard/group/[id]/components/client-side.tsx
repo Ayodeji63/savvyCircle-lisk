@@ -28,7 +28,7 @@ import GroupInfoCard from "./group-info-card";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { client } from "@/app/client";
-import { contractInstance, liskSepolia, tokenContract } from "@/lib/libs";
+import { contractInstance, baseSepolia, tokenContract } from "@/lib/libs";
 import { contractAddress } from "@/contract";
 import { group } from "console";
 import { formatEther, parseEther } from "viem";

@@ -27,9 +27,11 @@ import { AuthContext, useAuthContext } from "@/context/AuthContext";
 import { createUser } from "@/actions/actions";
 import { PrismaClient } from "@prisma/client";
 import { scrollSepoliaTestnet } from "thirdweb/chains";
-import { liskSepolia } from "@/lib/libs";
-import prisma from "@/lib/db";
+import { baseSepolia } from "@/lib/libs";
 import { notification } from "@/utils/notification";
+import { findUser } from "./lib/user";
+
+const prisma = new PrismaClient();
 
 const loginFormSchema = object({
   name: string().required("Telegram username is required"),
@@ -71,46 +73,21 @@ const LoginForm = () => {
         username: String(data.name),
       };
 
-      await createUser(params);
+      const existingUser = await findUser(String(account?.address));
+      console.log(existingUser);
+      if (!existingUser) {
+        await createUser(params);
+      }
       setLoading(false);
       notification.success("Signup Successful");
+      router.push("/dashboard");
     } catch (error) {
       console.log(error);
       setLoading(false);
       notification.error("Signup Failed");
     }
-
-    router.push("/dashboard");
+    // router.push("/dashboard");
   };
-  // async function findUser() {
-  //   try {
-  //     const existingUser = await prisma.user.findFirst({
-  //       where: {
-  //         address: account?.address,
-  //       }
-  //     });
-  //     console.log(existingUser);
-  //     return existingUser;
-  //   } catch (error) {
-  //     console.error("Error finding user:", error);
-  //     return null;
-  //   }
-  // }
-
-  // useEffect(() => {
-  //   if (account) {
-  //     findUser().then((user) => {
-  //       console.log(user);
-  //       if (!user) {
-  //         setShowSignUp(true);
-  //       } else {
-  //         router.push("/dashboard");
-  //       }
-  //     }).catch((error) => {
-  //       console.error("Error in useEffect:", error);
-  //     });
-  //   }
-  // }, [account, router]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-[21px]">
@@ -158,19 +135,19 @@ const LoginForm = () => {
           // onClick={onOpen} disabled={isOpen}
         >
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Sign up
+          Sign
         </Button>
       )}
       <ConnectButton
         client={client}
         accountAbstraction={{
-          chain: liskSepolia,
+          chain: baseSepolia,
           sponsorGas: true,
         }}
         wallets={[
           inAppWallet({
             auth: {
-              options: ["phone", "email"],
+              options: ["email"],
             },
           }),
         ]}
