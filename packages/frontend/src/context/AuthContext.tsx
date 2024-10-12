@@ -4,9 +4,30 @@ import { client } from "@/app/client";
 import { contractAddress } from "@/contract";
 import { createContext, useEffect } from "react"
 import { getContract } from "thirdweb";
+import { useActiveAccount } from "thirdweb/react";
+import { findUserTransactions } from "@/lib/user";
 
-import { undefined } from "zod";
+// Remove this line as it's not needed and may cause issues
+// import { undefined } from "zod";
 
+export interface User {
+    id: string;
+    username: string;
+    address: string;
+}
+
+type Transaction = {
+    data: string | null;
+    type: string;
+    id: string;
+    status: string;
+    amount: string;
+    transactionHash: string;
+    fromAddress: string;
+    toAddress: string;
+    createdAt: Date;
+    userId: string;
+}
 
 interface IAuthContext {
     userGroupId: bigint[];
@@ -17,7 +38,14 @@ interface IAuthContext {
     setGroupId: (value: bigint) => void;
     CARDS: Card[];
     setCARDS: Dispatch<SetStateAction<Card[]>>;
+    user: User | undefined;
+    setUser: Dispatch<SetStateAction<User | undefined>>;
+    transactions: Transaction[] | undefined;
+    setTransactions: Dispatch<SetStateAction<Transaction[] | undefined>>;
+    transaction: Transaction | undefined;
+    setTransaction: Dispatch<SetStateAction<Transaction | undefined>>;
 }
+
 export const AuthContext = createContext({} as IAuthContext);
 
 export type Card = {
@@ -31,6 +59,9 @@ export default function AuthContextProvider({ children }: { children: React.Reac
     const [userGroupId, setUserGroupId] = useState<bigint[]>([])
     const [depositAmount, setDepositAmount] = useState<number>(0);
     const [groupId, setGroupId] = useState<bigint>();
+    const [user, setUser] = useState<User>();
+    const [transactions, setTransactions] = useState<Transaction[]>()
+    const [transaction, setTransaction] = useState<Transaction>()
     const [CARDS, setCARDS] = useState<Card[]>([
         {
             id: 0,
@@ -53,6 +84,7 @@ export default function AuthContextProvider({ children }: { children: React.Reac
     ])
 
 
+
     return (
         <AuthContext.Provider value={{
             userGroupId,
@@ -62,12 +94,17 @@ export default function AuthContextProvider({ children }: { children: React.Reac
             groupId,
             setGroupId,
             CARDS,
-            setCARDS
+            setCARDS,
+            user,
+            setUser,
+            transactions,
+            setTransactions,
+            transaction,
+            setTransaction
         }}>
             {children}
         </AuthContext.Provider>
     )
 }
-
 
 export const useAuthContext = () => useContext(AuthContext);

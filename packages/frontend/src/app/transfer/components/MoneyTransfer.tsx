@@ -12,6 +12,12 @@ import { formatEther, parseEther } from "viem";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { notification } from "@/utils/notification";
+import { transactionSchema } from "@/types/utils";
+import { findUser, findUserTransactions } from "@/lib/user";
+import { createTransaction } from "@/actions/actions";
+import { useAuthContext } from "@/context/AuthContext";
+import { Icons } from "@/components/common/icons";
+import TransactionsList from "@/components/TransactionList";
 
 interface Friend {
   id: string;
@@ -19,6 +25,18 @@ interface Friend {
   address: string;
 }
 
+interface Transaction {
+  data: string | null;
+  type: string;
+  id: string;
+  status: string;
+  amount: string;
+  transactionHash: string;
+  fromAddress: string;
+  toAddress: string;
+  createdAt: Date;
+  userId: string;
+}
 interface FriendActionProps {
   friendAction: (friend: Friend) => void;
 }
@@ -63,6 +81,7 @@ const MoneyTransfer = () => {
   const [friend, setFriend] = useState<Friend>();
   const [loading, setLoading] = useState(false);
   const account = useActiveAccount();
+  const { user, transactions, setTransactions } = useAuthContext();
 
   const {
     data: userBalance,
@@ -78,7 +97,28 @@ const MoneyTransfer = () => {
     try {
       setLoading(true);
       console.log(`Sending ${amount} to ${recipient}`);
+      // const user = await findUser(String(account?.address));
+      console.log(user);
+
       const receipt = await transfer();
+      if (!receipt) {
+        setLoading(false)
+        return;
+      }
+      if (!friend) return;
+      if (receipt) {
+        const params: transactionSchema = {
+          fromAddress: String(user?.username),
+          toAddress: friend?.username,
+          amount: String(amount),
+          type: 'transfer',
+          transactionHash: String(receipt?.transactionHash),
+          status: 'success',
+        }
+        await createTransaction(params);
+        const tx = await findUserTransactions(user?.username ?? '');
+        setTransactions(tx);
+      }
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -97,8 +137,11 @@ const MoneyTransfer = () => {
     const fetchFriends = async () => {
       const fetchedFriends = await findMany();
       setFriends(fetchedFriends);
+      const tx = await findUserTransactions(user?.username ?? '');
+      setTransactions(tx);
     };
     fetchFriends();
+
   }, []);
 
   const transfer = async () => {
@@ -206,13 +249,13 @@ const MoneyTransfer = () => {
             {loading ? <LoadingSpinner /> : "Send Money"}
           </button>
         </div>
+        {transactions && (
 
-        {/* <h2 className="text-xl font-semibold mb-4">Friends</h2>
-                <div className="overflow-y-auto">
-                    {friends.map((friend) => (
-                        <FriendCard key={friend.id} friend={friend} />
-                    ))}
-                </div> */}
+          <div className="container mx-auto p-4">
+            <TransactionsList transactions={transactions} />
+          </div>
+        )}
+
       </main>
     </div>
   );

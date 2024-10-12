@@ -41,8 +41,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   action,
 }) => (
   <div className="flex flex-col items-center" onClick={() => action()}>
-    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-      <Icon className="text-green-600" size={20} />
+    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+      <Icon className="text-green-600" size={18} />
     </div>
     <span className="text-sm text-gray-600">{label}</span>
   </div>
@@ -50,7 +50,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
 
 const DashboardHeader = () => {
   const account = useActiveAccount();
-  const { userGroupId, setUserGroupId } = useAuthContext();
+  const { userGroupId, setUserGroupId, user } = useAuthContext();
   const router = useRouter();
 
   const {
@@ -135,7 +135,7 @@ const DashboardHeader = () => {
             <div className="flex items-center gap-x-2">
               {/* <Icons.logo className="h-[29px] w-[33px]" />
               <p className="text-base font-medium">SavvyCircle</p> */}
-              <p className="text-2xl font-bold">Welcome</p>
+              <p className="text-base font-semibold">Hello <br /> {`${user?.username.toLocaleLowerCase()}.base.eth`}</p>
             </div>
             <button>
               <Menu />
@@ -147,7 +147,7 @@ const DashboardHeader = () => {
                 Current saving balance
               </p>
 
-              <p className="text-lg font-semibold leading-6">
+              <p className="text-2xl mt-2 font-bold leading-6">
                 {formatViemBalance(userBalance ?? BigInt(200000000000)) ??
                   `200,000`}{" "}
               </p>

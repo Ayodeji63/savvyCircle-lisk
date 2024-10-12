@@ -36,6 +36,9 @@ import { Card, useAuthContext } from "@/context/AuthContext";
 import { tokenAddress } from "@/token";
 import { notification } from "@/utils/notification";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { transactionSchema } from "@/types/utils";
+import { createTransaction } from "@/actions/actions";
+import { findUserTransactions } from "@/lib/user";
 
 type Props = {
   id: string;
@@ -57,7 +60,7 @@ interface GroupProps {
 const GroupPageClientSide = ({ id }: any) => {
   const { setPage } = useUiStore();
 
-  const { CARDS, setCARDS } = useAuthContext();
+  const { CARDS, setCARDS, user, setTransactions } = useAuthContext();
   const account = useActiveAccount();
   const [loanRepayment, setLoanRepayment] = useState<number>(0);
   const [loanText, setLoanText] = useState("Repay Loan");
@@ -244,7 +247,23 @@ const GroupPageClientSide = ({ id }: any) => {
       setIsLoading(true);
       await approve(data.amount);
       await new Promise((resolve) => setTimeout(resolve, 10000));
-      await repayLoan(data.amount);
+      const hash = await repayLoan(data.amount);
+
+      if (hash) {
+        setIsLoading(false);
+        notification.success("Deposit Successful 🎉");
+        const params: transactionSchema = {
+          fromAddress: String(user?.username),
+          toAddress: groupData ? groupData[9] : 'Group',
+          amount: String(data.amount),
+          type: 'Deposit',
+          transactionHash: String(hash),
+          status: 'success',
+        }
+        await createTransaction(params);
+        const tx = await findUserTransactions(user?.username ?? '');
+        setTransactions(tx);
+      }
       notification.success("Loan Repaid 🎉");
       setIsLoading(false);
       refetchLoanData();

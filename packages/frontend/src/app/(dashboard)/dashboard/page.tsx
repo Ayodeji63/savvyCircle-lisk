@@ -26,11 +26,14 @@ import {
 import FloatingNavBar from "@/app/Navbar";
 import { Button } from "antd";
 import { contractInstance } from "@/lib/libs";
+import TransactionsList from "@/components/TransactionList";
+import { findUserTransactions } from "@/lib/user";
 // import EmptyState from "@/components/common/empty-state";
 
 const DashboardPage = () => {
   const account = useActiveAccount();
   const [userGroup, setUserGroup] = useState<any>([]);
+  const { transactions, user, setTransactions } = useAuthContext();
 
   const {
     data: _userGroupId,
@@ -44,27 +47,25 @@ const DashboardPage = () => {
 
   // const groupInfo = useCallback()
   console.log(_userGroupId);
+  const fetchTransactions = useCallback(async () => {
+    try {
+      const tx = await findUserTransactions(user?.username ?? '');
+      console.log("Fetched transactions:", tx); // Debug log
+      setTransactions(tx);
+    } catch (err) {
+      console.error("Error fetching transactions:", err);
+    }
+  }, [user?.username, setTransactions]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
 
   return (
     <main className="min-h-screen">
       <DashboardHeader />
       <PageWrapper className="mt-[238px] space-y-5 pb-[34px]">
-        {/* <section className="space-y-2">
-          <h1 className="py-4 text-base font-medium leading-[18px] text-[#0A0F29]">
-            Saving groups
-          </h1>
-          {Array.isArray(_userGroupId) && _userGroupId.length > 0 ? (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              {_userGroupId.map((id) => (
-                <Group key={id.toString()} id={id} />
-              ))}
-            </div>
-          ) : (
-            <div>
-              <p>Join a group in the telegram</p>
-            </div>
-          )}
-        </section> */}
 
         <div className="mb-4 mt-[300px] flex items-center justify-between rounded-xl bg-gray-800 p-4 text-white">
           <div>
@@ -102,34 +103,17 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* <section className="space-y-2">
-          <h1 className="text-base font-medium leading-[18px] text-[#0A0F29]">
-            Recent Transactions
-          </h1>
-          <ElementList itemsCount={2} rootClassName="grid gap-y-1">
-            <div className="flex items-center justify-between rounded-[8px] border border-[#D7D9E4] bg-white px-4 py-5 shadow-[0px_4px_8px_0px_#0000000D]">
-              <div className="flex items-center gap-x-3">
-                <Icons.bitcoinBag className="h-10 w-10" />
-                <div>
-                  <p className="text-base font-normal leading-[18px] text-[#0A0F29]">
-                    Group 3
-                  </p>
-                  <p className="text-xs font-normal leading-[14px] text-[#696F8C]">
-                    Today at 12:45pm
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="text-base font-medium leading-[18px] text-[#0A0F29]">
-                  #10,000
-                </p>
-                <p className="flex justify-end text-xs font-normal leading-[14px] text-[#098C28]">
-                  Deposit
-                </p>
-              </div>
-            </div>
-          </ElementList>
-        </section> */}
+        <div className="container mx-auto p-4">
+          {transactions ? (
+            transactions.length > 0 ? (
+              <TransactionsList transactions={transactions} />
+            ) : (
+              <p>No transactions found.</p>
+            )
+          ) : (
+            <p>Loading transactions...</p>
+          )}
+        </div>
       </PageWrapper>
       <FloatingNavBar />
     </main>
@@ -138,90 +122,3 @@ const DashboardPage = () => {
 
 export default DashboardPage;
 
-// import React from 'react';
-// import Image from 'next/image';
-// import { Eye, ChevronRight, Home, PieChart, Plus, Bell, Menu } from 'lucide-react';
-
-// export default function DashboardPage() {
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-4 max-w-md mx-auto">
-//       <header className="flex justify-between items-center mb-6">
-//         <h1 className="text-2xl font-bold">Welcome</h1>
-//         <div className="w-10 h-10 rounded-full bg-pink-200 overflow-hidden">
-//           <Image src="/profile-pic.jpg" alt="Profile" width={40} height={40} />
-//         </div>
-//       </header>
-
-//       <div className="bg-white rounded-xl p-4 shadow mb-4">
-//         <p className="text-sm text-gray-500 mb-1">Total Available</p>
-//         <div className="flex justify-between items-center">
-//           <h2 className="text-2xl font-bold">$32,521.00</h2>
-//           <Eye className="text-gray-400" />
-//         </div>
-//         <div className="flex mt-4 space-x-2">
-//           <button className="bg-lime-400 text-black px-4 py-2 rounded-full flex items-center">
-//             <Plus size={18} className="mr-1" /> Add
-//           </button>
-//           <button className="bg-gray-200 text-black px-4 py-2 rounded-full">
-//             Request
-//           </button>
-//           <button className="bg-gray-200 text-black px-4 py-2 rounded-full">
-//             ...
-//           </button>
-//         </div>
-//       </div>
-
-// <div className="bg-gray-800 text-white rounded-xl p-4 mb-4 flex justify-between items-center">
-//   <div>
-//     <h3 className="font-semibold">Check credit score</h3>
-//     <p className="text-sm text-gray-400">See Your Credit Report Absolutely Free</p>
-//   </div>
-//   <ChevronRight />
-// </div>
-
-//       <div className="mb-4">
-//         <div className="flex justify-between items-center mb-2">
-//           <h3 className="font-semibold">Savings</h3>
-//           <span className="text-sm text-gray-500">All</span>
-//         </div>
-//         <div className="bg-white rounded-xl p-4 shadow flex justify-between items-center">
-//           <div>
-//             <h4 className="font-semibold">New Home</h4>
-//             <p className="text-sm text-gray-500">Ends: 9 Dec, 2023</p>
-//           </div>
-//           <div className="flex items-center">
-//             <span className="text-lg font-bold mr-2">$8,460.00</span>
-//             <div className="w-10 h-10 rounded-full bg-yellow-200 overflow-hidden">
-//               <Image src="/home-icon.jpg" alt="Home" width={40} height={40} />
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2">
-//         <ul className="flex justify-between">
-//           <li className="flex flex-col items-center">
-//             <Home size={24} className="text-blue-500" />
-//             <span className="text-xs mt-1">Home</span>
-//           </li>
-//           <li className="flex flex-col items-center">
-//             <PieChart size={24} className="text-gray-400" />
-//             <span className="text-xs mt-1">Insights</span>
-//           </li>
-//           <li className="flex flex-col items-center">
-//             <Plus size={24} className="text-gray-400" />
-//             <span className="text-xs mt-1">Add</span>
-//           </li>
-//           <li className="flex flex-col items-center">
-//             <Bell size={24} className="text-gray-400" />
-//             <span className="text-xs mt-1">Notifications</span>
-//           </li>
-//           <li className="flex flex-col items-center">
-//             <Menu size={24} className="text-gray-400" />
-//             <span className="text-xs mt-1">More</span>
-//           </li>
-//         </ul>
-//       </nav>
-//     </div>
-//   );
-// }

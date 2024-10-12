@@ -13,3 +13,11 @@ export type userSchema = {
     address: string;
 };
 
+export type transactionSchema = {
+    fromAddress: string,
+    toAddress: string,
+    amount: string,
+    type: string,
+    transactionHash: string,
+    status: string,
+}

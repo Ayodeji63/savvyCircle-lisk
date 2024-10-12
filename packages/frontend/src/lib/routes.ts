@@ -8,4 +8,5 @@ export const routes = {
   requestLoan: "/dashboard/request-loan",
   repayLoan: "/dashboard/repay-loan",
   groupById: (id: string) => `/dashboard/group/${id}`,
+  transactionById: (id: string) => `/transaction/${id}`
 };

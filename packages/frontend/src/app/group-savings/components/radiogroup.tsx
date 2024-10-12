@@ -25,6 +25,9 @@ import { prepareContractCall, sendTransaction } from "thirdweb";
 import { contractAddress } from "@/contract";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { notification } from "@/utils/notification";
+import { transactionSchema } from "@/types/utils";
+import { createTransaction } from "@/actions/actions";
+import { findUserTransactions } from "@/lib/user";
 
 interface GroupProps {
   id: bigint;
@@ -40,7 +43,7 @@ const GroupRadio: React.FC<GroupProps> = ({
   onMouseLeave,
 }) => {
   const [groupInfo, setGroupInfo] = useState<any>([]);
-  const { setGroupId } = useAuthContext();
+  const { setGroupId, user, setTransactions } = useAuthContext();
   const { depositAmount, setDepositAmount, groupId } = useAuthContext();
   const [text, setText] = useState<string>("Continue");
   const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +123,20 @@ const GroupRadio: React.FC<GroupProps> = ({
       if (hash) {
         setIsLoading(false);
         notification.success("Deposit Successful 🎉");
+        const params: transactionSchema = {
+          fromAddress: String(user?.username),
+          toAddress: groupInfo[9],
+          amount: String(depositAmount),
+          type: 'Deposit',
+          transactionHash: String(hash),
+          status: 'success',
+        }
+        await createTransaction(params);
+        const tx = await findUserTransactions(user?.username ?? '');
+        setTransactions(tx);
+
       }
+
 
       // sendTransaction(tx2);
     } catch (error) {

@@ -23,13 +23,13 @@ import {
 import { useContext, useEffect, useState } from "react";
 import { getContract } from "thirdweb";
 import { abi, contractAddress } from "@/contract";
-import { AuthContext, useAuthContext } from "@/context/AuthContext";
+import { AuthContext, useAuthContext, User } from "@/context/AuthContext";
 import { createUser } from "@/actions/actions";
 import { PrismaClient } from "@prisma/client";
 import { scrollSepoliaTestnet } from "thirdweb/chains";
 import { baseSepolia } from "@/lib/libs";
 import { notification } from "@/utils/notification";
-import { findUser } from "../../../../lib/user";
+import { findUser, findUserTransactions } from "../../../../lib/user";
 
 const prisma = new PrismaClient();
 
@@ -45,7 +45,7 @@ const LoginForm = () => {
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const router = useRouter();
-  const { userGroupId, setUserGroupId } = useAuthContext();
+  const { userGroupId, setUserGroupId, setUser, user, setTransactions } = useAuthContext();
   const [showSignUp, setShowSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -75,8 +75,13 @@ const LoginForm = () => {
 
       const existingUser = await findUser(String(account?.address));
       console.log(existingUser);
+      if (existingUser) {
+        setUser(existingUser);
+      }
+
       if (!existingUser) {
-        await createUser(params);
+        const newUser: User = await createUser(params);
+        setUser(newUser);
       }
       setLoading(false);
       notification.success("Signup Successful");
@@ -88,6 +93,8 @@ const LoginForm = () => {
     }
     // router.push("/dashboard");
   };
+
+
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-[21px]">
@@ -132,7 +139,7 @@ const LoginForm = () => {
       {account && (
         <Button
           className="bg-white text-black"
-          // onClick={onOpen} disabled={isOpen}
+        // onClick={onOpen} disabled={isOpen}
         >
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Sign
