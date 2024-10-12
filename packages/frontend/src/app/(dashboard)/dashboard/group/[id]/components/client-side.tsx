@@ -416,7 +416,7 @@ const GroupPageClientSide = ({ id }: any) => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            {groupData[10] === account?.address && Number(groupData[0]) === 0 && <div className="space-y-2">
               <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
                 Set monthly savings for group
               </h1>
@@ -430,7 +430,7 @@ const GroupPageClientSide = ({ id }: any) => {
                 {" "}
                 {isLoading ? <LoadingSpinner /> : "Set Monthly Savings"}
               </Button>
-            </div>
+            </div>}
             {/* Recent transactions */}
             {/* <div className="space-y-2">
               <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
