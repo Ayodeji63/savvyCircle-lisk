@@ -10,7 +10,7 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#34581C] bg-[url('/img/bg.jpeg')] bg-cover bg-center bg-no-repeat bg-blend-overlay">
-      <div className="w-full max-w-md rounded-lg p-8 text-center shadow-xl">
+      <div className="w-full max-w-md rounded-lg p-8 text-center">
         <div className="flex flex-col items-center space-y-4">
           <Icons.logo className="h-24 w-24 text-white" />
           <h1 className="text-4xl font-bold text-white">SavvyCircle</h1>

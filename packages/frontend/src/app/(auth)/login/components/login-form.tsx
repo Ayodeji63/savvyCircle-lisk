@@ -29,7 +29,7 @@ import { PrismaClient } from "@prisma/client";
 import { scrollSepoliaTestnet } from "thirdweb/chains";
 import { baseSepolia } from "@/lib/libs";
 import { notification } from "@/utils/notification";
-import { findUser } from "./lib/user";
+import { findUser } from "../../../../lib/user";
 
 const prisma = new PrismaClient();
 

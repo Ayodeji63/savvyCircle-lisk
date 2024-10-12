@@ -162,6 +162,10 @@ const GroupRadio: React.FC<GroupProps> = ({
     }
   }
 
+  useEffect(() => {
+    refetchGroupData();
+  }, []);
+
   const onClick = () => {
     setDepositAmount(Number(formatEther(groupInfo[0])));
     setGroupId(id);
@@ -255,7 +259,6 @@ const GroupRadio: React.FC<GroupProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              console.log("I'm ");
               router.push(routes.groupById(id.toString()));
             }}
             className="rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600"

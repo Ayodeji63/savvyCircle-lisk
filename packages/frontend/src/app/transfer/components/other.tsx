@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { User, Home, Clock, CreditCard, DollarSign, Plus } from "lucide-react";
-import { findMany } from "./lib/findmany";
+import { findMany } from "../../../lib/findmany";
 
 interface Friend {
   id: string;

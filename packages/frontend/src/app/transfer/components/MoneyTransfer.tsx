@@ -2,7 +2,7 @@
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { User, ArrowLeft, DollarSign } from "lucide-react";
 import BackButton from "@/components/common/back-button";
-import { findMany } from "./lib/findmany";
+import { findMany } from "../../../lib/findmany";
 import { motion } from "framer-motion";
 import { createAvatar } from "@dicebear/core";
 import { avataaars } from "@dicebear/collection";
@@ -64,13 +64,15 @@ const MoneyTransfer = () => {
   const [loading, setLoading] = useState(false);
   const account = useActiveAccount();
 
-  const { data: userBalance, isLoading: tokenBalanceLoading } = useReadContract(
-    {
-      contract: tokenContract,
-      method: "function balanceOf(address) returns (uint256)",
-      params: account ? [account.address] : ["0x"],
-    },
-  );
+  const {
+    data: userBalance,
+    isLoading: tokenBalanceLoading,
+    refetch: refetchBalance,
+  } = useReadContract({
+    contract: tokenContract,
+    method: "function balanceOf(address) returns (uint256)",
+    params: account ? [account.address] : ["0x"],
+  });
 
   const handleSend = async () => {
     try {
@@ -119,6 +121,7 @@ const MoneyTransfer = () => {
       console.log(waitForReceiptOptions);
 
       notification.success("Transfer Successful");
+      refetchBalance();
       return waitForReceiptOptions;
     } catch (error) {
       console.log(error);

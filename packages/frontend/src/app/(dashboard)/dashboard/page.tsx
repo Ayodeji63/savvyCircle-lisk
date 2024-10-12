@@ -81,9 +81,7 @@ const DashboardPage = () => {
             Loan Application Status
           </h2>
           <div className="rounded-lg bg-yellow-100 p-3">
-            <p className="text-sm text-yellow-800">
-              Your loan application is under review
-            </p>
+            <p className="text-sm text-yellow-800">No Loan application</p>
           </div>
         </div>
 
@@ -98,17 +96,16 @@ const DashboardPage = () => {
             <div className="mt-2 h-2.5 w-full rounded-full bg-blue-200">
               <div
                 className="h-2.5 rounded-full bg-blue-600"
-                style={{ width: "45%" }}
+                style={{ width: "0%" }}
               ></div>
             </div>
           </div>
         </div>
 
-        <section className="space-y-2">
+        {/* <section className="space-y-2">
           <h1 className="text-base font-medium leading-[18px] text-[#0A0F29]">
             Recent Transactions
           </h1>
-          {/* <EmptyState text="Transaction details go here" /> */}
           <ElementList itemsCount={2} rootClassName="grid gap-y-1">
             <div className="flex items-center justify-between rounded-[8px] border border-[#D7D9E4] bg-white px-4 py-5 shadow-[0px_4px_8px_0px_#0000000D]">
               <div className="flex items-center gap-x-3">
@@ -132,7 +129,7 @@ const DashboardPage = () => {
               </div>
             </div>
           </ElementList>
-        </section>
+        </section> */}
       </PageWrapper>
       <FloatingNavBar />
     </main>

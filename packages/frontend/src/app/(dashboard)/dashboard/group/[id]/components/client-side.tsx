@@ -63,6 +63,7 @@ const GroupPageClientSide = ({ id }: any) => {
   const [loanText, setLoanText] = useState("Repay Loan");
   const [request, setRequest] = useState("Request Loan");
   const [isLoading, setIsLoading] = useState(false);
+  const [monthlySavings, setMonthlySavings] = useState("");
   const {
     data: groupData,
     isLoading: idLoading,
@@ -204,6 +205,39 @@ const GroupPageClientSide = ({ id }: any) => {
     }
   };
 
+  const maketx = async () => {
+    try {
+      if (!id) return;
+      setIsLoading(true);
+      const transaction = prepareContractCall({
+        contract: contractInstance,
+        method: "function setMonthlyContribution(int256, uint256)",
+        params: [id, parseEther(String(monthlySavings))],
+      });
+      if (!account) {
+        notification.error("Account not active");
+        return;
+      }
+      const waitForReceiptOptions = await sendTransaction({
+        account,
+        transaction,
+      });
+      if (!waitForReceiptOptions) {
+        setIsLoading(false);
+        notification.error("An error occured");
+      }
+      setIsLoading(false);
+      notification.success("Transaction completed");
+      console.log(waitForReceiptOptions);
+      refetchGroupData();
+    } catch (e) {
+      console.error(e);
+
+      setIsLoading(false);
+      notification.error("An error occured");
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       console.log(data);
@@ -213,6 +247,7 @@ const GroupPageClientSide = ({ id }: any) => {
       await repayLoan(data.amount);
       notification.success("Loan Repaid 🎉");
       setIsLoading(false);
+      refetchLoanData();
     } catch (e) {
       setIsLoading(false);
       notification.error("An error occured");
@@ -222,7 +257,7 @@ const GroupPageClientSide = ({ id }: any) => {
   return (
     <main className="">
       {groupData && (
-        <div className="flex items-center bg-[#4A9F17] p-4 text-white shadow-lg">
+        <div className="flex items-center bg-green-900 p-4 text-white shadow-lg">
           {/* <ArrowLeft className="mr-2" /> */}
           <BackButton />
           <h1 className="text-xl font-bold">{groupData[9]}</h1>
@@ -269,7 +304,14 @@ const GroupPageClientSide = ({ id }: any) => {
                   loanData[4] > 0 && (
                     <Sheet>
                       <SheetTrigger asChild>
-                        <Button className="bg-[#4A9F17]">Repay Loan</Button>
+                        <Button
+                          className="bg-[#4A9F17]"
+                          onClick={() =>
+                            setLoanRepayment(Number(formatEther(loanData[4])))
+                          }
+                        >
+                          Repay Loan
+                        </Button>
                       </SheetTrigger>
                       <SheetContent
                         side="bottom"
@@ -286,6 +328,7 @@ const GroupPageClientSide = ({ id }: any) => {
                                 <Input
                                   placeholder="Enter the amount you want to repay"
                                   className="tect-base font-medium text-[#696F8C] placeholder:text-[#696F8C]"
+                                  value={loanRepayment}
                                   {...register("amount")}
                                 />
                                 <FormErrorTextMessage errors={errors.amount} />
@@ -327,7 +370,7 @@ const GroupPageClientSide = ({ id }: any) => {
               <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
                 More information about group
               </h1>
-              <div className="grid grid-cols-3 gap-x-5">
+              <div className="mb-4 grid grid-cols-3 gap-x-5">
                 <GroupInfoCard
                   text="Total no of members"
                   value={String(groupData[11])}
@@ -353,12 +396,27 @@ const GroupPageClientSide = ({ id }: any) => {
                 />
               </div>
             </div>
-            {/* Recent transactions */}
+
             <div className="space-y-2">
+              <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
+                Set monthly savings for group
+              </h1>
+              <Input
+                placeholder="Enter the monthly savings"
+                className="tect-base mb-4 mt-2 p-6 font-medium text-[#696F8C] placeholder:text-[#696F8C]"
+                value={monthlySavings}
+                onChange={(e) => setMonthlySavings(e.target.value)}
+              />
+              <Button className="bg-[#4A9F17]" onClick={maketx}>
+                {" "}
+                {isLoading ? <LoadingSpinner /> : "Set Monthly Savings"}
+              </Button>
+            </div>
+            {/* Recent transactions */}
+            {/* <div className="space-y-2">
               <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
                 Recent Transactions
               </h1>
-              {/* <EmptyState text="Transaction details go here" /> */}
 
               <div className="flex items-center justify-between rounded-[8px] border border-[#D7D9E4] bg-white px-4 py-5 shadow-[0px_4px_8px_0px_#0000000D]">
                 <div className="flex items-center gap-x-3">
@@ -403,7 +461,7 @@ const GroupPageClientSide = ({ id }: any) => {
                   </p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </PageWrapper>
       )}

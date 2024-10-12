@@ -5,7 +5,7 @@ const GroupPage = ({ params: { id } }: { params: { id: string } }) => {
   return (
     <>
       <GroupPageClientSide {...{ id }} />
-      <FloatingNavBar />
+      {/* <FloatingNavBar /> */}
     </>
   );
 };

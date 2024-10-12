@@ -11,6 +11,7 @@ import {
   Users,
   PiggyBank,
 } from "lucide-react";
+import { notification } from "@/utils/notification";
 
 interface NavItemProps {
   href: string;
@@ -29,6 +30,9 @@ const NavItem: React.FC<NavItemProps> = ({ href, icon: Icon, isActive }) => (
 
 const FloatingNavBar: React.FC = () => {
   const pathname = usePathname();
+  const comingSoon = () => {
+    notification.info("coming soon");
+  };
 
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 transform rounded-full bg-white px-4 py-2 shadow-lg">
@@ -43,16 +47,18 @@ const FloatingNavBar: React.FC = () => {
           icon={Users}
           isActive={pathname === "/group-savings"}
         />
-        <NavItem
-          href="/dashboard"
-          icon={PiggyBank}
-          isActive={pathname === "/cards"}
-        />
-        <NavItem
-          href="/dashboard"
-          icon={User}
-          isActive={pathname === "/profile"}
-        />
+        <div
+          onClick={() => comingSoon()}
+          className={`flex flex-col items-center rounded-full p-2`}
+        >
+          <PiggyBank size={24} color={"black"} />
+        </div>
+        <div
+          onClick={() => comingSoon()}
+          className={`flex flex-col items-center rounded-full p-2`}
+        >
+          <User size={24} color={"black"} />
+        </div>
       </ul>
     </nav>
   );

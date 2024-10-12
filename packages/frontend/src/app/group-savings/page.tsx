@@ -41,7 +41,7 @@ import { contractInstance, tokenContract } from "@/lib/libs";
 import { tokenAddress } from "@/token";
 import GroupRadio from "./components/radiogroup";
 import { useAuthContext } from "@/context/AuthContext";
-import { Hash, parseEther } from "viem";
+import { formatEther, Hash, parseEther } from "viem";
 import { prepareTransactionRequest } from "node_modules/viem/_types/actions/wallet/prepareTransactionRequest";
 import { ArrowLeft, Info } from "lucide-react";
 import WelcomeBanner from "./components/WelcomeBanner";
@@ -151,8 +151,17 @@ const DepositPage = () => {
     params: [account?.address ?? "0x00000000"],
   });
 
+  const {
+    data: userTotalSavings,
+    isLoading: totalSavingsLoading,
+    refetch: refetchTotalSavings,
+  } = useReadContract({
+    contract: contractInstance,
+    method: "function usersTotalSavings(address) returns (uint256)",
+    params: [account?.address ?? "0x00000000"],
+  });
+
   // const groupInfo = useCallback()
-  console.log(_userGroupId);
 
   const {
     register,
@@ -183,10 +192,32 @@ const DepositPage = () => {
     setPage({ previousRouter: routes.dashboard });
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     useUiStore.persist.rehydrate();
+    refectUserGroupId();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [totalSavings, growthRate, totalGroups] = [10000, 5.2, 3]; // Fetch these from your API
+
+  function formatViemBalance(balance: bigint): string {
+    // Convert the balance to a number
+    const balanceInEther = parseFloat(formatEther(balance));
+
+    // Format the number with commas
+    const formattedBalance = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(balanceInEther);
+
+    // Add magnitude representation for millions and thousands
+    if (balanceInEther >= 1000000) {
+      return `${formattedBalance}`;
+    } else if (balanceInEther >= 1000) {
+      return `${formattedBalance}`;
+    } else {
+      return formattedBalance;
+    }
+  }
+  console.log(formatViemBalance(userTotalSavings ?? BigInt("0")));
 
   return (
     <>
@@ -198,8 +229,18 @@ const DepositPage = () => {
         </div> */}
         <WelcomeBanner />
         <QuickStats
-          totalSavings={totalSavings}
-          growthRate={growthRate}
+          totalSavings={formatViemBalance(userTotalSavings ?? BigInt("0"))}
+          growthRate={Math.ceil(
+            Number(
+              (Number(_userGroupId?.length) /
+                Number(
+                  formatEther(
+                    userTotalSavings ? userTotalSavings : BigInt("1"),
+                  ),
+                )) *
+                100,
+            ),
+          )}
           totalGroups={Number(_userGroupId?.length)}
         />
         <PageWrapper>
