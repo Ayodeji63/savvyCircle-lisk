@@ -6,8 +6,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --env-file=.env index.js",
-    "build": "echo 'No build step required'"
+    "start": "nodemon --env-file=.env index.js",
+    "build": "webpack --config webpack.config.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -15,13 +16,16 @@
   "dependencies": {
     "@prisma/client": "5.20.0",
     "axios": "^1.7.7",
+    "cron": "^3.1.7",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
+    "nodemon": "^3.1.7",
+    "ping": "^0.4.4",
     "prisma": "^5.20.0",
     "telegraf": "^4.16.3",
+    "viem": "^2.21.16",
     "web3": "^4.13.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.7"
   }
 }

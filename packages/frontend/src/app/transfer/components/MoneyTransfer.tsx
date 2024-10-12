@@ -113,12 +113,16 @@ const MoneyTransfer = () => {
         transaction,
       });
       if (!waitForReceiptOptions) {
+        notification.error("An error occured");
         return;
       }
-      return waitForReceiptOptions;
       console.log(waitForReceiptOptions);
+
+      notification.success("Transfer Successful");
+      return waitForReceiptOptions;
     } catch (error) {
       console.log(error);
+      notification.error("An error occured");
     }
   };
 
