@@ -3,7 +3,7 @@
 pragma solidity ^0.8.18;
 
 import {Script, console} from "forge-std/Script.sol";
-import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
+import {NairaStableCoin} from "../../src/NairaStableCoin.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
@@ -19,10 +19,7 @@ contract DeployDSC is Script {
     address[] public tokenAddress;
     address[] public priceFeedAddresses;
 
-    function run()
-        external
-        returns (DecentralizedStableCoin, DSCEngine, HelperConfig)
-    {
+    function run() external returns (NairaStableCoin, DSCEngine, HelperConfig) {
         HelperConfig config = new HelperConfig();
         (wethUsdPriceFeed, wbtcUsdPriceFeed, weth, wbtc, deployerKey) = config
             .activeNetworkConfig();
@@ -30,7 +27,7 @@ contract DeployDSC is Script {
         priceFeedAddresses = [wethUsdPriceFeed, wbtcUsdPriceFeed];
         console.log(initialOwner);
         vm.startBroadcast();
-        DecentralizedStableCoin dsc = new DecentralizedStableCoin(initialOwner);
+        NairaStableCoin dsc = new NairaStableCoin(initialOwner);
         DSCEngine engine = new DSCEngine(
             tokenAddress,
             priceFeedAddresses,

@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 
 import {Test, console} from "forge-std/Test.sol";
 import {DeployDSC} from "../../script/stablecoin/DeployDSC.s.sol";
-import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
+import {NairaStableCoin} from "../../src/NairaStableCoin.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
 import {HelperConfig} from "../../script/stablecoin/HelperConfig.s.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
@@ -19,7 +19,7 @@ contract DSCEngineTest is Test {
     );
 
     DeployDSC deployer;
-    DecentralizedStableCoin dsc;
+    NairaStableCoin dsc;
     DSCEngine dsce;
     HelperConfig config;
     address wethUsdPriceFeed;

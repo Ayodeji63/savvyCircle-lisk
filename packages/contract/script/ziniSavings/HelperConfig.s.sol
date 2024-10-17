@@ -56,7 +56,7 @@ contract HelperConfig is Script {
         // 0x4cbeb5E0793b6b741E32D20349A33938Fe9eCF3f
         return
             NetworkConfig({
-                token: 0x4cbeb5E0793b6b741E32D20349A33938Fe9eCF3f,
+                token: 0xF998be67eA24466978a102D9f4aD03bf27aEEeD3,
                 deployerKey: vm.envUint("PRIVATE_KEY")
             });
     }

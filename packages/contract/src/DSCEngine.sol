@@ -25,7 +25,7 @@
 
 pragma solidity ^0.8.18;
 
-import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
+import {NairaStableCoin} from "./NairaStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -84,7 +84,7 @@ contract DSCEngine is ReentrancyGuard {
     mapping(address user => uint256 amountDscMinted) private s_DSCMinted;
     address[] private s_collateralTokens;
 
-    DecentralizedStableCoin private immutable i_dsc;
+    NairaStableCoin private immutable i_dsc;
 
     ///////////////////////
     // Events            //
@@ -136,7 +136,7 @@ contract DSCEngine is ReentrancyGuard {
             s_priceFeeds[tokenAddresses[i]] = priceFeedAddress[i];
             s_collateralTokens.push(tokenAddresses[i]);
         }
-        i_dsc = DecentralizedStableCoin(dscAddress);
+        i_dsc = NairaStableCoin(dscAddress);
     }
 
     ////////////////////////////////

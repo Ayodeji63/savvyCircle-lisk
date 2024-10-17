@@ -64,6 +64,13 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         mapping(address => bool) hasReceivedLoan;
     }
 
+    struct CreditScore {
+        uint256 totalLoans; // Total flex-loans takne
+        uint256 repaidLoans; // Number of flex-loans repaid
+        uint256 totalSavings; // Total savings contributed
+        uint256 loanDefault; // Number of loan defaults
+    }
+
     struct Loan {
         uint256 totalAmount;
         uint256 amountRepaid;
@@ -82,6 +89,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     mapping(int256 => Group) public groups;
     mapping(address => int256[]) private userGroups;
     mapping(address => uint256) public usersTotalSavings;
+    mapping(address => CreditScore) public creditScores;
     uint256 public groupCount;
     int256[] public groupIds;
     mapping(address => mapping(int256 => Loan)) public loans;
@@ -142,7 +150,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         // newGroup.monthlyContribution = _monthlyContribution;
         newGroup.creationTime = block.timestamp;
         newGroup.name = _name;
-        newGroup.admin = msg.sender;
+        newGroup.admin = user;
         _joinGroup(_groupId, user);
         groupCount++;
         groupIds.push(_groupId);
@@ -178,6 +186,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         ] += group.monthlyContribution;
         usersTotalSavings[msg.sender] = usersTotalSavings[msg.sender] += group
             .monthlyContribution;
+        creditScores[msg.sender].totalSavings += group.monthlyContribution;
 
         emit SavingsDeposited(_groupId, msg.sender, group.monthlyContribution);
     }
@@ -281,6 +290,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         if (loan.amountRepaid >= loan.totalAmount) {
             loan.fullyRepaid = true;
             group.loanRepaid = true;
+            creditScores[msg.sender].repaidLoans += 1;
 
             if (loan.isFirstBatch) {
                 group.firstBatchRepaidCount++;
@@ -363,6 +373,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
                 isFirstBatch: isFirstBatch,
                 isSecondBatch: isSecondBatch
             });
+            creditScores[borrower].totalLoans += 1;
             group.hasReceivedLoan[borrower] = true;
             emit LoanDistributed(_groupId, borrower, loanAmount, isFirstBatch);
             // }
@@ -380,6 +391,34 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     ///////////////////////////
     // Public View Functions    //
     //////////////////////////
+    function calculateCreditScore(address user) public view returns (uint256) {
+        CreditScore storage score = creditScores[user];
+        uint256 repaymentRate = (score.repaidLoans * 100) / score.totalLoans; // Percentage of repaid loans
+        uint256 savingsFactor = score.totalSavings / 1 ether; // Bascit savings factor, adjust for precision
+
+        // Calculate a basic credit score (0-100 scale)
+        uint256 creditScore = ((repaymentRate * 70) / 100) +
+            ((savingsFactor * 30) / 100);
+
+        return creditScore;
+    }
+
+    function getLoanInterestRate(address user) public view returns (uint256) {
+        uint256 score = calculateCreditScore(user);
+
+        // Reward users with higher scores by reducing interst
+        if (score > 80) {
+            return 5; // 5% interest
+        } else if (score > 50) {
+            return 10; // 10% interest
+        } else {
+            return 15; // 15% interest
+        }
+    }
+
+    function getCreditScore(address user) public view returns (uint256) {
+        return calculateCreditScore(user);
+    }
 
     function getGroupMonthlySavings(
         int256 _groupId
@@ -448,6 +487,10 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         address user
     ) public view returns (uint256) {
         return groups[_groupId].memberSavings[user];
+    }
+
+    function getMemberCount(int256 _groupId) public view returns (uint256) {
+        return groups[_groupId].memberCount;
     }
 
     function getHasReceivedLoan(

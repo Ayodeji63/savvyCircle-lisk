@@ -38,14 +38,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * This is the contrat meant to be governed by DSCEngine. This contract is hust the ERC20 implementation of our stablecoin system
  */
 
-contract DecentralizedStableCoin is ERC20Burnable, Ownable {
+contract NairaStableCoin is ERC20Burnable, Ownable {
     error DecentralizedStableCoin__BurnAmountExceedsBalnce();
     error DecentralizedStableCoin__NotZeroAddress();
     error DecentralizedStableCoin__MustBeMoreThanZero();
 
     constructor(
         address initialOwner
-    ) ERC20("DecentralizedStableCoin", "DSC") Ownable(initialOwner) {}
+    ) ERC20("NairaStableCoin", "NGNS") Ownable(initialOwner) {}
 
     function burn(uint256 _amount) public override onlyOwner {
         uint256 balance = balanceOf(msg.sender);
