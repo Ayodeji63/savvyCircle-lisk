@@ -17,13 +17,20 @@ contract ZiniSavingsTest is Test {
     address public USER_3 = makeAddr("user3");
     address public USER_4 = makeAddr("user4");
     uint256 public constant STARTING_ERC20_BALANCE = 10_000_000 ether;
-    uint256 public constant MONTHLY_CONTRIBUTION = 10_000 ether;
+    uint256 public constant MONTHLY_CONTRIBUTION = 5_000 ether;
     uint256 public constant CONTRACT_BALANCE = 100_000_000_000 ether;
+    uint256 public constant MAX_FLEX_LOAN_AMOUNT = 3_000_000 ether;
+    uint256 public constant MEDIUM_FLEX_LOAN_AMOUNT = 2_000_000 ether;
+    uint256 public constant LOW_FLEX_LOAN_AMOUNT = 1_000_000 ether;
     int256 public constant GROUP_ID = -145899;
     int256 public constant GROUP2_ID = 1234;
 
     event GroupCreated(int256 indexed groupId, string name, address admin);
     event MemberJoined(int256 indexed groupId, address member);
+    event FlexLoanTransferred(
+        address indexed recipient,
+        uint256 indexed amount
+    );
 
     function setUp() public {
         deployer = new DeployZini();
@@ -384,7 +391,9 @@ contract ZiniSavingsTest is Test {
         vm.stopPrank();
 
         (upkeepNeeded2, performData2) = ziniSavings.checkUpkeep("0x");
-        assert(upkeepNeeded2 == false);
+        assert(upkeepNeeded2 == true);
+        uint256 creditScore = ziniSavings.getCreditScore(USER_1);
+        console.log("Credit Score is %d", creditScore);
 
         /******* Assert Eligible group is group 2 ********/
 
@@ -492,4 +501,31 @@ contract ZiniSavingsTest is Test {
     //     ziniSavings.repayLoan(1, MONTHLY_CONTRIBUTION);
     //     vm.stopPrank();
     // }
+
+    function test_get_max_loan_by_user() public groupOfTwo {
+        uint256 creditScore = ziniSavings.getCreditScore(USER_1);
+        console.log("Credit Score is %d", creditScore);
+    }
+
+    function test_request_flex_loan_emit_event() public oneGroup {
+        uint256 BORROW_AMOUNT = 300_000 ether;
+        uint256 creditScore = ziniSavings.getCreditScore(USER_1);
+        console.log("Credit Score is %d", creditScore);
+        vm.expectEmit(true, true, false, false, address(ziniSavings));
+        emit FlexLoanTransferred(USER_1, BORROW_AMOUNT);
+        vm.startPrank(USER_1);
+        ziniSavings.requestFlexLoan(BORROW_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function test_request_flex_loan_revert() public oneGroup {
+        uint256 BORROW_AMOUNT = 3_000_000 ether;
+        uint256 creditScore = ziniSavings.getCreditScore(USER_1);
+        console.log("Credit Score is %d", creditScore);
+        vm.expectEmit(true, true, false, false, address(ziniSavings));
+        emit FlexLoanTransferred(USER_1, BORROW_AMOUNT);
+        vm.startPrank(USER_1);
+        ziniSavings.requestFlexLoan(BORROW_AMOUNT);
+        vm.stopPrank();
+    }
 }

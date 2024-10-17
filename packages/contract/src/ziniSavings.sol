@@ -30,6 +30,13 @@ import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/inter
 import {console} from "forge-std/console.sol";
 
 contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
+    ///////////////
+    // error /////
+    //////////////
+
+    error BorrowLimitExceeed();
+    error No_OutStandingLoan();
+
     ///////////////////////////
     // Type of  contract    //
     //////////////////////////
@@ -90,6 +97,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     mapping(address => int256[]) private userGroups;
     mapping(address => uint256) public usersTotalSavings;
     mapping(address => CreditScore) public creditScores;
+    mapping(address => uint256) public flexLoans;
     uint256 public groupCount;
     int256[] public groupIds;
     mapping(address => mapping(int256 => Loan)) public loans;
@@ -98,12 +106,20 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     uint256 public constant LOCK_PERIOD = 365 days; // 12 months
     uint256 public constant LOAN_PRECISION = 3;
     uint256 public constant MAX_CYCLES = 4;
+    uint256 public constant MAX_FLEX_LOAN_AMOUNT = 3_000_000 ether;
+    uint256 public constant MEDIUM_FLEX_LOAN_AMOUNT = 2_000_000 ether;
+    uint256 public constant LOW_FLEX_LOAN_AMOUNT = 1_000_000 ether;
 
     ///////////////////////////
     // Events               //
     //////////////////////////
     event GroupCreated(int256 indexed groupId, string name, address admin);
     event MemberJoined(int256 indexed groupId, address indexed member);
+    event FlexLoanTransferred(
+        address indexed recipient,
+        uint256 indexed amount
+    );
+    event FlexLoanRepaid(address indexed sender, uint256 indexed amount);
     event SavingsWithdraw(
         int256 indexed groupId,
         address indexed owner,
@@ -167,6 +183,33 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
 
     function joinGroup(int256 _groupId, address user) external {
         _joinGroup(_groupId, user);
+    }
+
+    function requestFlexLoan(uint256 amount) public {
+        uint256 maxAmount = getMaxLoanAmount(msg.sender);
+        if (amount > maxAmount) {
+            revert BorrowLimitExceeed();
+        }
+
+        uint256 interestRate = getLoanInterestRate(msg.sender);
+        uint256 totalRepaymentAmount = amount + ((amount * interestRate) / 100);
+
+        // Track the loan
+        flexLoans[msg.sender] += totalRepaymentAmount;
+        creditScores[msg.sender].totalLoans += 1;
+        token.transfer(msg.sender, amount);
+
+        emit FlexLoanTransferred(msg.sender, amount);
+    }
+
+    function repayFlexLoan(uint256 amount) public {
+        if (flexLoans[msg.sender] < 0) {
+            revert No_OutStandingLoan();
+        }
+        flexLoans[msg.sender] -= amount;
+        creditScores[msg.sender].repaidLoans += 1;
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        emit FlexLoanRepaid(msg.sender, amount);
     }
 
     function deposit(int256 _groupId) public payable {
@@ -392,15 +435,28 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     // Public View Functions    //
     //////////////////////////
     function calculateCreditScore(address user) public view returns (uint256) {
-        CreditScore storage score = creditScores[user];
-        uint256 repaymentRate = (score.repaidLoans * 100) / score.totalLoans; // Percentage of repaid loans
-        uint256 savingsFactor = score.totalSavings / 1 ether; // Bascit savings factor, adjust for precision
+        CreditScore memory score = creditScores[user];
+        uint256 repaymentRate = (score.totalLoans == 0)
+            ? 0
+            : ((score.repaidLoans * 100) / score.totalLoans);
+        uint256 savingsFactor = score.totalSavings / 1 ether;
 
-        // Calculate a basic credit score (0-100 scale)
+        // Basic formula: 70% based on repayment history, 30% on savings
         uint256 creditScore = ((repaymentRate * 70) / 100) +
             ((savingsFactor * 30) / 100);
-
         return creditScore;
+    }
+
+    function getMaxLoanAmount(address user) public view returns (uint256) {
+        uint256 score = calculateCreditScore(user);
+
+        if (score > 10000) {
+            return MAX_FLEX_LOAN_AMOUNT; // Highest amount for the best credit score
+        } else if (score >= 5000) {
+            return MEDIUM_FLEX_LOAN_AMOUNT; // Medium amount
+        } else {
+            return LOW_FLEX_LOAN_AMOUNT; // Lowest amount
+        }
     }
 
     function getLoanInterestRate(address user) public view returns (uint256) {
