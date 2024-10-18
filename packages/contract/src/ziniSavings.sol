@@ -436,15 +436,67 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     //////////////////////////
     function calculateCreditScore(address user) public view returns (uint256) {
         CreditScore memory score = creditScores[user];
+
+        // Calculate repayment rate
         uint256 repaymentRate = (score.totalLoans == 0)
             ? 0
-            : ((score.repaidLoans * 100) / score.totalLoans);
-        uint256 savingsFactor = score.totalSavings / 1 ether;
+            : ((score.repaidLoans * 20) / score.totalLoans);
 
-        // Basic formula: 70% based on repayment history, 30% on savings
+        // Calculate savings factor using logarithmic scale
+        uint256 savingsInNaira = score.totalSavings / 1e18;
+        uint256 savingsFactor;
+        if (savingsInNaira > 0) {
+            // Multiply by 1000 before division to preserve some decimal points
+            uint256 logValue = (log2(savingsInNaira + 1) * 1000) / 100;
+            savingsFactor = logValue;
+        } else {
+            savingsFactor = 0;
+        }
+
+        // Calculate final score with scaled values
         uint256 creditScore = ((repaymentRate * 70) / 100) +
-            ((savingsFactor * 30) / 100);
+            ((savingsFactor * 30) / 1000);
+
         return creditScore;
+    }
+
+    function log2(uint256 x) internal pure returns (uint256) {
+        uint256 result = 0;
+        uint256 n = x;
+
+        if (n >= 2 ** 128) {
+            n >>= 128;
+            result += 128;
+        }
+        if (n >= 2 ** 64) {
+            n >>= 64;
+            result += 64;
+        }
+        if (n >= 2 ** 32) {
+            n >>= 32;
+            result += 32;
+        }
+        if (n >= 2 ** 16) {
+            n >>= 16;
+            result += 16;
+        }
+        if (n >= 2 ** 8) {
+            n >>= 8;
+            result += 8;
+        }
+        if (n >= 2 ** 4) {
+            n >>= 4;
+            result += 4;
+        }
+        if (n >= 2 ** 2) {
+            n >>= 2;
+            result += 2;
+        }
+        if (n >= 2 ** 1) {
+            result += 1;
+        }
+
+        return result;
     }
 
     function getMaxLoanAmount(address user) public view returns (uint256) {
