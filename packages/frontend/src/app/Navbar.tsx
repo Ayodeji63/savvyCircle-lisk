@@ -47,12 +47,18 @@ const FloatingNavBar: React.FC = () => {
           icon={Users}
           isActive={pathname === "/group-savings"}
         />
-        <div
+
+        <NavItem
+          href="/loan"
+          icon={PiggyBank}
+          isActive={pathname === "/loan"}
+        />
+        {/* <div
           onClick={() => comingSoon()}
           className={`flex flex-col items-center rounded-full p-2`}
         >
           <PiggyBank size={24} color={"black"} />
-        </div>
+        </div> */}
         <div
           onClick={() => comingSoon()}
           className={`flex flex-col items-center rounded-full p-2`}
