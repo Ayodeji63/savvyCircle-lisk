@@ -168,7 +168,7 @@ const DepositPage = () => {
     handleSubmit,
     control,
     setValue,
-    formState: {},
+    formState: { },
   } = useForm<FormData>({
     resolver: yupResolver(depositSchema),
   });
@@ -230,7 +230,7 @@ const DepositPage = () => {
         <WelcomeBanner />
         <QuickStats
           totalSavings={formatViemBalance(userTotalSavings ?? BigInt("0"))}
-          growthRate={Math.ceil(
+          growthRate={userTotalSavings && userTotalSavings > 0 ? Math.ceil(
             Number(
               (Number(_userGroupId?.length) /
                 Number(
@@ -238,9 +238,9 @@ const DepositPage = () => {
                     userTotalSavings ? userTotalSavings : BigInt("1"),
                   ),
                 )) *
-                100,
+              100,
             ),
-          )}
+          ) : 0}
           totalGroups={Number(_userGroupId?.length)}
         />
         <PageWrapper>

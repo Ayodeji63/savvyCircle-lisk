@@ -1,8 +1,74 @@
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { contractInstance, formatViemBalance } from '@/lib/libs';
+import { notification } from '@/utils/notification';
 import React, { useState } from 'react';
+import { prepareContractCall, sendTransaction } from 'thirdweb';
+import { useActiveAccount, useReadContract } from 'thirdweb/react';
+import { formatEther, parseEther } from 'viem';
 
 const CreditScorePage: React.FC = () => {
-    const [loanAmount, setLoanAmount] = useState(5000);
-    const creditScore = 3; // Example low score
+    const [isLoading, setIsLoading] = useState(false);
+
+    const account = useActiveAccount();
+
+    const {
+        data: creditScore,
+        isLoading: idLoadings,
+        refetch: refectUserGroupId,
+    } = useReadContract({
+        contract: contractInstance,
+        method: "function getCreditScore(address) returns (uint256)",
+        params: [account?.address ?? "0x00000000"],
+    });
+
+    const {
+        data: maxloanAmount,
+        isLoading: isLoadings,
+        refetch: refetchMaxLoanAmount,
+    } = useReadContract({
+        contract: contractInstance,
+        method: "function getMaxLoanAmount(address) returns (uint256)",
+        params: [account?.address ?? "0x00000000"],
+    });
+
+    const {
+        data: loanInterestRate,
+        isLoading: isLoadingsRate,
+        refetch: refetchMaxLoanInterestRate,
+    } = useReadContract({
+        contract: contractInstance,
+        method: "function getLoanInterestRate(address) returns (uint256)",
+        params: [account?.address ?? "0x00000000"],
+    });
+
+    const [loanAmount, setLoanAmount] = useState(Number(formatEther(maxloanAmount ? maxloanAmount : BigInt(0))));
+    // const creditScore = 3; // Example low score
+    console.log();
+
+    const borrow = async () => {
+        try {
+            setIsLoading(true);
+            const transaction = prepareContractCall({
+                contract: contractInstance,
+                method: "function requestFlexLoan(uint256)",
+                params: [parseEther(String(loanAmount))],
+            });
+
+            if (!account) return;
+            const waitForReceiptOptions = await sendTransaction({
+                account,
+                transaction,
+            });
+            console.log(waitForReceiptOptions);
+            notification.success("Flex Loan Borrowed Successfully");
+            setIsLoading(false);
+        } catch (error) {
+            console.log(error);
+            notification.error("An error occured");
+            setIsLoading(false);
+        }
+    };
+
 
     const getScoreColor = (score: number) => {
         if (score >= 800) return '#4CAF50';
@@ -51,10 +117,10 @@ const CreditScorePage: React.FC = () => {
                             <path
                                 d={semicirclePath}
                                 fill="none"
-                                stroke={getScoreColor(creditScore)}
+                                stroke={getScoreColor(Number(creditScore))}
                                 strokeWidth="16"
                                 strokeDasharray={pathLength}
-                                strokeDashoffset={pathLength - (creditScore / 850) * pathLength}
+                                strokeDashoffset={pathLength - (Number(creditScore) / 850) * pathLength}
                                 strokeLinecap="round"
                             />
 
@@ -68,7 +134,7 @@ const CreditScorePage: React.FC = () => {
                                 cy="90"
                                 r="4"
                                 fill="white"
-                                stroke={getScoreColor(creditScore)}
+                                stroke={getScoreColor(Number(creditScore))}
                                 strokeWidth="2"
                             />
                             <circle
@@ -76,18 +142,18 @@ const CreditScorePage: React.FC = () => {
                                 cy="90"
                                 r="4"
                                 fill="white"
-                                stroke={getScoreColor(creditScore)}
+                                stroke={getScoreColor(Number(creditScore))}
                                 strokeWidth="2"
                             />
                         </svg>
 
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-5xl font-bold">{creditScore}</span>
-                            <span className="text-xl">{getScoreLabel(creditScore)}</span>
+                            <span className="text-5xl font-bold">{Number(creditScore)}</span>
+                            <span className="text-xl">{getScoreLabel(Number(creditScore))}</span>
                         </div>
                     </div>
                     <p className="text-center mt-4">
-                        Your Credit Score is {getScoreLabel(creditScore)}
+                        Your Credit Score is {getScoreLabel(Number(creditScore))}
                     </p>
                     <p className="text-center text-sm text-gray-500">
                         Last Check on {new Date().toLocaleDateString()}
@@ -108,11 +174,11 @@ const CreditScorePage: React.FC = () => {
                         onChange={(e) => setLoanAmount(Number(e.target.value))}
                         className="w-full mb-4 bg-green-700"
                     />
-                    <p>Loan amount: ${loanAmount}</p>
-                    <p>Estimated interest rate: 15.99%</p>
+                    <p>Loan amount: #{loanAmount}</p>
+                    <p>Estimated interest rate: {Number(loanInterestRate)}%</p>
                     <p>Estimated monthly payment: $175.76</p>
-                    <button className="mt-4 bg-green-700 text-white px-4 py-2 rounded">
-                        Apply Now
+                    <button className="mt-4 bg-green-700 text-white px-4 py-2 rounded" onClick={borrow}>
+                        {isLoading ? <LoadingSpinner /> : "Borrow Now"}
                     </button>
                 </div>
 
