@@ -39,6 +39,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { transactionSchema } from "@/types/utils";
 import { createTransaction } from "@/actions/actions";
 import { findUserTransactions } from "@/lib/user";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   id: string;
@@ -201,7 +202,7 @@ const GroupPageClientSide = ({ id }: any) => {
         transaction,
       });
       console.log(waitForReceiptOptions);
-      setLoanText("Loan Repaid! 🎉");
+      setLoanText("Loan Repaid");
       return waitForReceiptOptions.transactionHash;
     } catch (err) {
       console.log(err);
@@ -230,7 +231,7 @@ const GroupPageClientSide = ({ id }: any) => {
         notification.error("An error occured");
       }
       setIsLoading(false);
-      notification.success("Transaction completed");
+      notification.success("Transaction Successful!");
       console.log(waitForReceiptOptions);
       refetchGroupData();
     } catch (e) {
@@ -251,20 +252,19 @@ const GroupPageClientSide = ({ id }: any) => {
 
       if (hash) {
         setIsLoading(false);
-        notification.success("Deposit Successful 🎉");
         const params: transactionSchema = {
           fromAddress: String(user?.username),
-          toAddress: groupData ? groupData[9] : 'Group',
+          toAddress: groupData ? groupData[9] : "Group",
           amount: String(data.amount),
-          type: 'Deposit',
+          type: "Deposit",
           transactionHash: String(hash),
-          status: 'success',
-        }
+          status: "success",
+        };
         await createTransaction(params);
-        const tx = await findUserTransactions(user?.username ?? '');
+        const tx = await findUserTransactions(user?.username ?? "");
         setTransactions(tx);
       }
-      notification.success("Loan Repaid 🎉");
+      notification.success("Transaction Successful!");
       setIsLoading(false);
       refetchLoanData();
     } catch (e) {
@@ -366,7 +366,9 @@ const GroupPageClientSide = ({ id }: any) => {
                               </div>
                               <Button className="bg-[#4A9F17]">
                                 {" "}
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isLoading && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
                                 {!isLoading && loanText}
                               </Button>
                             </form>
@@ -416,21 +418,28 @@ const GroupPageClientSide = ({ id }: any) => {
               </div>
             </div>
 
-            {groupData[10] === account?.address && Number(groupData[0]) === 0 && <div className="space-y-2">
-              <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
-                Set monthly savings for group
-              </h1>
-              <Input
-                placeholder="Enter the monthly savings"
-                className="tect-base mb-4 mt-2 p-6 font-medium text-[#696F8C] placeholder:text-[#696F8C]"
-                value={monthlySavings}
-                onChange={(e) => setMonthlySavings(e.target.value)}
-              />
-              <Button className="bg-[#4A9F17]" onClick={maketx}>
-                {" "}
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Set Monthly Savings"}
-              </Button>
-            </div>}
+            {groupData[10] === account?.address &&
+              Number(groupData[0]) === 0 && (
+                <div className="space-y-2">
+                  <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">
+                    Set monthly savings for group
+                  </h1>
+                  <Input
+                    placeholder="Enter the monthly savings"
+                    className="tect-base mb-4 mt-2 p-6 font-medium text-[#696F8C] placeholder:text-[#696F8C]"
+                    value={monthlySavings}
+                    onChange={(e) => setMonthlySavings(e.target.value)}
+                  />
+                  <Button className="bg-[#4A9F17]" onClick={maketx}>
+                    {" "}
+                    {isLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Set Monthly Savings"
+                    )}
+                  </Button>
+                </div>
+              )}
             {/* Recent transactions */}
             {/* <div className="space-y-2">
               <h1 className="text-base font-semibold leading-[18px] text-[#0A0F29]">

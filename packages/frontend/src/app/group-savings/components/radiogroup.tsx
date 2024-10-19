@@ -7,7 +7,7 @@ import { RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuthContext } from "@/context/AuthContext";
 import { contractInstance, tokenContract } from "@/lib/libs";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Info } from "lucide-react";
+import { PlusCircle, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
 import {
@@ -122,21 +122,19 @@ const GroupRadio: React.FC<GroupProps> = ({
       const hash = await deposit();
       if (hash) {
         setIsLoading(false);
-        notification.success("Deposit Successful 🎉");
+        notification.success("Transaction Successful!");
         const params: transactionSchema = {
           fromAddress: String(user?.username),
           toAddress: groupInfo[9],
           amount: String(depositAmount),
-          type: 'Deposit',
+          type: "Deposit",
           transactionHash: String(hash),
-          status: 'success',
-        }
+          status: "success",
+        };
         await createTransaction(params);
-        const tx = await findUserTransactions(user?.username ?? '');
+        const tx = await findUserTransactions(user?.username ?? "");
         setTransactions(tx);
-
       }
-
 
       // sendTransaction(tx2);
     } catch (error) {
@@ -263,7 +261,9 @@ const GroupRadio: React.FC<GroupProps> = ({
                       className="bg-[#4A9F17]"
                       onClick={() => makeDeposit()}
                     >
-                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isLoading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       {!isLoading && text}
                     </Button>
                   </form>

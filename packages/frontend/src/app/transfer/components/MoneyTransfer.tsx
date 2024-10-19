@@ -1,6 +1,6 @@
 "use client";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { User, ArrowLeft, DollarSign } from "lucide-react";
+import { User, ArrowLeft, DollarSign, Loader2 } from "lucide-react";
 import BackButton from "@/components/common/back-button";
 import { findMany } from "../../../lib/findmany";
 import { motion } from "framer-motion";
@@ -102,7 +102,7 @@ const MoneyTransfer = () => {
 
       const receipt = await transfer();
       if (!receipt) {
-        setLoading(false)
+        setLoading(false);
         return;
       }
       if (!friend) return;
@@ -111,12 +111,12 @@ const MoneyTransfer = () => {
           fromAddress: String(user?.username),
           toAddress: friend?.username,
           amount: String(amount),
-          type: 'transfer',
+          type: "transfer",
           transactionHash: String(receipt?.transactionHash),
-          status: 'success',
-        }
+          status: "success",
+        };
         await createTransaction(params);
-        const tx = await findUserTransactions(user?.username ?? '');
+        const tx = await findUserTransactions(user?.username ?? "");
         setTransactions(tx);
       }
       setLoading(false);
@@ -137,11 +137,10 @@ const MoneyTransfer = () => {
     const fetchFriends = async () => {
       const fetchedFriends = await findMany();
       setFriends(fetchedFriends);
-      const tx = await findUserTransactions(user?.username ?? '');
+      const tx = await findUserTransactions(user?.username ?? "");
       setTransactions(tx);
     };
     fetchFriends();
-
   }, []);
 
   const transfer = async () => {
@@ -246,16 +245,18 @@ const MoneyTransfer = () => {
             onClick={handleSend}
             className="mb-6 w-full rounded-lg bg-green-600 py-4 text-lg font-bold text-white shadow-md transition duration-300 hover:bg-green-700"
           >
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Money"}
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "Send Money"
+            )}
           </button>
         </div>
         {transactions && (
-
           <div className="container mx-auto p-4">
             <TransactionsList transactions={transactions} />
           </div>
         )}
-
       </main>
     </div>
   );
