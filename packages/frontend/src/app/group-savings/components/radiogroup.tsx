@@ -263,7 +263,7 @@ const GroupRadio: React.FC<GroupProps> = ({
                       className="bg-[#4A9F17]"
                       onClick={() => makeDeposit()}
                     >
-                      {isLoading && <LoadingSpinner />}
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {!isLoading && text}
                     </Button>
                   </form>

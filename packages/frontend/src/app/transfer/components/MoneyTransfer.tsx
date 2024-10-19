@@ -246,7 +246,7 @@ const MoneyTransfer = () => {
             onClick={handleSend}
             className="mb-6 w-full rounded-lg bg-green-600 py-4 text-lg font-bold text-white shadow-md transition duration-300 hover:bg-green-700"
           >
-            {loading ? <LoadingSpinner /> : "Send Money"}
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Money"}
           </button>
         </div>
         {transactions && (

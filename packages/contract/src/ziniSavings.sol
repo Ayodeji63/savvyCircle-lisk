@@ -36,6 +36,7 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
 
     error BorrowLimitExceeed();
     error No_OutStandingLoan();
+    error OutStandingLoanNotRepaid();
 
     ///////////////////////////
     // Type of  contract    //
@@ -189,6 +190,9 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
         uint256 maxAmount = getMaxLoanAmount(msg.sender);
         if (amount > maxAmount) {
             revert BorrowLimitExceeed();
+        }
+        if (flexLoans[msg.sender] > 0) {
+            revert OutStandingLoanNotRepaid();
         }
 
         uint256 interestRate = getLoanInterestRate(msg.sender);
@@ -434,30 +438,86 @@ contract ZiniSavings is ReentrancyGuard, AutomationCompatibleInterface {
     ///////////////////////////
     // Public View Functions    //
     //////////////////////////
-    function calculateCreditScore(address user) public view returns (uint256) {
-        CreditScore memory score = creditScores[user];
+    // Add this function to your ZiniSavings contract
+    function getFlexLoanMonthlyRepayment(
+        address borrower
+    ) public view returns (uint256) {
+        uint256 loanAmount = flexLoans[borrower];
+        console.log("loan amount is %d", loanAmount);
+        uint256 interestRate = getLoanInterestRate(borrower);
+        uint256 loanTermMonths = 12; // 12 months loan term
+        console.log("Interest rate is %d", interestRate);
 
-        // Calculate repayment rate
-        uint256 repaymentRate = (score.totalLoans == 0)
-            ? 0
-            : ((score.repaidLoans * 20) / score.totalLoans);
+        // Use higher precision for calculations (multiply by 1e18)
+        uint256 precision = 1e18;
 
-        // Calculate savings factor using logarithmic scale
-        uint256 savingsInNaira = score.totalSavings / 1e18;
-        uint256 savingsFactor;
-        if (savingsInNaira > 0) {
-            // Multiply by 1000 before division to preserve some decimal points
-            uint256 logValue = (log2(savingsInNaira + 1) * 1000) / 100;
-            savingsFactor = logValue;
-        } else {
-            savingsFactor = 0;
+        // Calculate monthly interest rate with higher precision
+        uint256 monthlyInterestRate = (interestRate * precision) / 12 / 100;
+        console.log("Monthly interest rate (x1e18) is %d", monthlyInterestRate);
+
+        // Calculate (1 + r)^n with higher precision
+        uint256 base = precision + monthlyInterestRate;
+        uint256 exponent = loanTermMonths;
+        uint256 basePower = precision;
+        // 1054980
+
+        for (uint256 i = 0; i < exponent; i++) {
+            basePower = (basePower * base) / precision;
         }
 
-        // Calculate final score with scaled values
-        uint256 creditScore = ((repaymentRate * 70) / 100) +
-            ((savingsFactor * 30) / 1000);
+        // Calculate numerator and denominator
+        uint256 numerator = loanAmount * monthlyInterestRate * basePower;
+        uint256 denominator = (basePower - precision) * precision;
 
-        return creditScore;
+        // Calculate monthly repayment
+        uint256 monthlyRepayment = (loanAmount / loanTermMonths);
+
+        return monthlyRepayment;
+    }
+
+    function calculateCreditScore(address user) public view returns (uint256) {
+        CreditScore memory score = creditScores[user];
+        uint256 userBalance = token.balanceOf(user);
+
+        // Base score for all users (20 points)
+        uint256 baseScore = 20;
+
+        // Repayment history (max 40 points)
+        uint256 repaymentScore;
+        if (score.totalLoans == 0) {
+            repaymentScore = 20; // Base score for new users
+        } else {
+            repaymentScore = ((score.repaidLoans * 40) / score.totalLoans);
+            // Bonus for no defaults
+            if (score.loanDefault == 0 && score.totalLoans > 0) {
+                repaymentScore += 5;
+            }
+        }
+
+        // Savings history (max 25 points)
+        uint256 savingsInNaira = score.totalSavings / 1e18;
+        uint256 savingsScore;
+        if (savingsInNaira > 0) {
+            savingsScore = (log2(savingsInNaira + 1) * 25) / 10;
+            if (savingsScore > 25) savingsScore = 25;
+        }
+
+        // Current balance (max 15 points)
+        uint256 balanceInNaira = userBalance / 1e18;
+        uint256 balanceScore;
+        if (balanceInNaira > 0) {
+            balanceScore = (log2(balanceInNaira + 1) * 15) / 10;
+            if (balanceScore > 15) balanceScore = 15;
+        }
+
+        // Calculate final score
+        uint256 creditScore = baseScore +
+            repaymentScore +
+            savingsScore +
+            balanceScore;
+
+        // Cap at 100
+        return creditScore > 100 ? 100 : creditScore;
     }
 
     function log2(uint256 x) internal pure returns (uint256) {

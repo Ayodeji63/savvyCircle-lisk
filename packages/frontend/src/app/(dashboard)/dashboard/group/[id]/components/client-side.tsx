@@ -366,7 +366,7 @@ const GroupPageClientSide = ({ id }: any) => {
                               </div>
                               <Button className="bg-[#4A9F17]">
                                 {" "}
-                                {isLoading && <LoadingSpinner />}
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {!isLoading && loanText}
                               </Button>
                             </form>
@@ -428,7 +428,7 @@ const GroupPageClientSide = ({ id }: any) => {
               />
               <Button className="bg-[#4A9F17]" onClick={maketx}>
                 {" "}
-                {isLoading ? <LoadingSpinner /> : "Set Monthly Savings"}
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Set Monthly Savings"}
               </Button>
             </div>}
             {/* Recent transactions */}

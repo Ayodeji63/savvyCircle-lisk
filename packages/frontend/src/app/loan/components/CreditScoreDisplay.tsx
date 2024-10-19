@@ -1,6 +1,7 @@
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { contractInstance, formatViemBalance } from '@/lib/libs';
 import { notification } from '@/utils/notification';
+import { Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { prepareContractCall, sendTransaction } from 'thirdweb';
 import { useActiveAccount, useReadContract } from 'thirdweb/react';
@@ -178,7 +179,7 @@ const CreditScorePage: React.FC = () => {
                     <p>Estimated interest rate: {Number(loanInterestRate)}%</p>
                     <p>Estimated monthly payment: $175.76</p>
                     <button className="mt-4 bg-green-700 text-white px-4 py-2 rounded" onClick={borrow}>
-                        {isLoading ? <LoadingSpinner /> : "Borrow Now"}
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Borrow Now"}
                     </button>
                 </div>
 

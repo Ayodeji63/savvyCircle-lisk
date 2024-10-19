@@ -519,13 +519,44 @@ contract ZiniSavingsTest is Test {
     }
 
     function test_request_flex_loan_revert() public oneGroup {
-        uint256 BORROW_AMOUNT = 3_000_000 ether;
+        uint256 BORROW_AMOUNT = 300_000 ether;
+        uint256 interestRate = ziniSavings.getLoanInterestRate(USER_1);
+        uint256 INTEREST = BORROW_AMOUNT / interestRate;
+        console.log("INTEREST Score is %d", INTEREST);
+        uint256 BORROW_AMOUNT_PLUS_INTEREST = BORROW_AMOUNT + INTEREST;
+
         uint256 creditScore = ziniSavings.getCreditScore(USER_1);
         console.log("Credit Score is %d", creditScore);
-        vm.expectEmit(true, true, false, false, address(ziniSavings));
-        emit FlexLoanTransferred(USER_1, BORROW_AMOUNT);
+        bool upkeepNeeded2;
+        bytes memory performData2;
+        (upkeepNeeded2, performData2) = ziniSavings.checkUpkeep("0x");
+        (int256[] memory eligibleGroup2, uint256 eligibleCount) = abi.decode(
+            performData2,
+            (int256[], uint256)
+        );
+        console.log(upkeepNeeded2);
+        // assertEq(eligibleCount, 0);
+        if (upkeepNeeded2) {
+            // ziniSavings.performUpkeep(performData2);
+        }
+
+        // vm.expectEmit(true, true, false, false, address(ziniSavings));
+        // vm.startPrank(USER_1);
+        // ERC20Mock(token).approve(address(ziniSavings), LOAN_AMOUNT_TO_REPAY);
+        // ziniSavings.repayLoan(GROUP_ID, LOAN_AMOUNT_TO_REPAY);
+        // uint256 user1DebtAfter = ziniSavings.getUserDebt(GROUP_ID, USER_1);
+        // assertEq(user1DebtAfter, ZERO);
+        // vm.stopPrank();
+
         vm.startPrank(USER_1);
         ziniSavings.requestFlexLoan(BORROW_AMOUNT);
+        uint256 monthlyPayment = ziniSavings.getFlexLoanMonthlyRepayment(
+            USER_1
+        );
+        console.log("Monthly repayment is %d", monthlyPayment);
+        ziniSavings.repayFlexLoan(BORROW_AMOUNT_PLUS_INTEREST);
+        uint256 userFlexLoanAmount = ziniSavings.flexLoans(USER_1);
         vm.stopPrank();
+        assertEq(userFlexLoanAmount, 0);
     }
 }
