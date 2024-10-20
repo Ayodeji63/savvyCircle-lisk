@@ -101,6 +101,8 @@ const CreditScorePage: React.FC = () => {
         e.preventDefault();
         console.log(e.target.value);
         try {
+            setIsLoading(true);
+
             const transaction = prepareContractCall({
                 contract: tokenContract,
                 method: "function approve(address, uint256) returns(bool)",
@@ -115,6 +117,8 @@ const CreditScorePage: React.FC = () => {
             console.log(waitForReceiptOptions);
         } catch (error) {
             console.log(error);
+            setIsLoading(false);
+
         }
         try {
             setIsLoading(true);
