@@ -40,7 +40,11 @@ The core of SavvyCircle is the `SavvySavings` smart contract. Key components inc
 - **Repayment Tracking**: The contract keeps track of outstanding loans and repayments with built-in penalties for late payments.
 - **Chainlink Automation**: Automates critical processes like loan distribution to ensure no central authority is required to handle operations.
 
-## How It Works
+Here's how you can update the **How It Works** section with a note about the bot's cold start behavior:
+
+---
+
+### How It Works
 
 1. **Group Formation**: Users create or join a savings group.
 2. **Regular Contributions**: Members make monthly contributions to their group's pool.
@@ -49,6 +53,10 @@ The core of SavvyCircle is the `SavvySavings` smart contract. Key components inc
    - Loans are given in two batches to ensure fairness.
 4. **Repayment**: Members repay loans over a 3-month period with 5% interest.
 5. **Cycle Continuation**: After full repayment, a new loan cycle can begin.
+
+> **Note:** The Telegram bot may experience a brief cold start period if inactive for some time. It may take up to a minute for the bot to respond when testing after inactivity. After that, interactions with the bot will proceed smoothly.
+
+---
 
 ## Getting Started
 
