@@ -20,22 +20,22 @@ SavvyCircle aims to address the financial inclusion challenges faced by small bu
 
 ## Features
 
-- **Group Creation**: Users can create or join savings groups.
-- **Regular Savings**: Members contribute a fixed amount monthly to their group's pool.
-- **Automated Loan Distribution**: The smart contract automatically distributes loans to eligible members.
-- **Flexible Repayment**: Members can repay loans over time with a small interest rate.
-- **Transparent Operations**: All transactions and group activities are recorded on the blockchain.
-- **Chainlink Integration**: Utilizes Chainlink's Automation for timely loan distributions.
+- **ROSCA as a Service**: Members can easily create and manage saving groups on Telegram through the SavvyCircle bot. The platform enables seamless savings, lending, and borrowing within a trusted, decentralized framework.
+- **Automated Loan Distribution**: Using Chainlink Automation, the system ensures timely and fair loan distribution, reducing the reliance on centralized intermediaries.
+- **Telegram Integration**: Groups can manage their savings and lending operations directly through the Telegram app, creating a social experience where group communication and financial transactions are integrated.
+- **Transparent Transactions**: Every transaction within the group is visible and verifiable, eliminating any concerns about mismanagement or fraud.
+- **Stablecoin for Naira Pegged Transactions**: SavvyCircle introduces a stablecoin pegged to the Naira, allowing borderless payments and transactions within the platform without currency volatility.
+- **Easy Web2 to Web3 Transition**: SavvyCircle offers a familiar interface via Telegram, making it simple for users who are new to blockchain to transition from traditional systems to decentralized solutions.
 
 ## Smart Contract
 
-The core of SavvyCircle is the `ZiniSavings` smart contract. Key components include:
+The core of SavvyCircle is the `SavvySavings` smart contract. Key components include:
 
-- ERC20 token integration for deposits and loans
-- Group management system
-- Automated loan distribution mechanism
-- Repayment tracking
-- Chainlink Automation compatibility
+- **ERC20 Token**: Users can deposit and withdraw tokens that represent their contributions or loans.
+- **Group Management**: Smart contracts facilitate group creation, user enrollment, and contribution tracking.
+- **Loan Mechanism**: Loans are automatically distributed based on preset conditions (e.g., contributions, repayment history).
+- **Repayment Tracking**: The contract keeps track of outstanding loans and repayments with built-in penalties for late payments.
+- **Chainlink Automation**: Automates critical processes like loan distribution to ensure no central authority is required to handle operations.
 
 ## How It Works
 
@@ -49,17 +49,17 @@ The core of SavvyCircle is the `ZiniSavings` smart contract. Key components incl
 
 ## Getting Started
 
-To interact with the SavvyCircle platform:
+### Prerequisites
 
-1. Ensure you have a compatible wallet (e.g., MetaMask) and some test tokens.
-2. Connect to the appropriate network where the contract is deployed.
-3. Use the provided frontend interface or interact directly with the contract to:
-   - Create or join a group
-   - Make deposits
-   - Receive loans (automatic)
-   - Repay loans
+1. You need a compatible Ethereum wallet like MetaMask.
+2. Make sure you're connected to the Base network.
 
-Detailed instructions for deployment and interaction will be provided in separate documentation.
+### Steps
+
+1. **Connect Your Wallet**: Use MetaMask or a compatible wallet to connect to the Base network.
+2. **Create/Join a Group**: Add the SavvyCircle bot to your Telegram group and follow the instructions to set up your savings pool.
+3. **Start Saving**: Contribute to your group savings and build your loan eligibility.
+4. **Borrow & Repay**: Loans are automatically distributed based on the group's rules, and you can repay them directly through the platform.
 
 ## Contributing
 
