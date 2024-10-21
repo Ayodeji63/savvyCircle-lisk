@@ -29,6 +29,9 @@ SavvyCircle aims to address the financial inclusion challenges faced by small bu
 
 ## Smart Contract
 
+- [NairaStableCoin(NGNS)](https://sepolia.basescan.org/token/0xf998be67ea24466978a102d9f4ad03bf27aeeed3)
+- [SavvyCircle-Contract](https://sepolia.basescan.org/address/0x750c8db6e8df2d8ecfc57b99a4bc58aecf0f4c86)
+
 The core of SavvyCircle is the `SavvySavings` smart contract. Key components include:
 
 - **ERC20 Token**: Users can deposit and withdraw tokens that represent their contributions or loans.
